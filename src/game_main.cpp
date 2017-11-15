@@ -188,7 +188,6 @@ void render ( const WindowInfo& window )
 
 void resize ( const WindowInfo& window )
 {
-	std::cout << "Resized to: W:" << window.width << " H:" << window.height << '\n';
 	GLCALL( glViewport( 0, 0, window.hidpi_width, window.hidpi_height ) );
 }
 
