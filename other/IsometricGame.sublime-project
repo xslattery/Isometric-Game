@@ -6,6 +6,12 @@
 			"name": "OSX - build & run",
 			"shell": true,
 			"working_dir": "$project_path/.."
+		},
+		{
+			"cmd": "./build_osx.sh;",
+			"name": "OSX - build",
+			"shell": true,
+			"working_dir": "$project_path/.."
 		}
 	],
 	"folders":
