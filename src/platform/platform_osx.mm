@@ -82,7 +82,28 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 
 	[self setWantsBestResolutionOpenGLSurface:YES];
 
+	// NOTE(Xavier): (2017.11.16) This code adds a 
+	// button on top of the opengl view:
+	[self setWantsLayer:YES];
+	int x = 10;
+    int y = 10;
+    int width = 130;
+    int height = 40;
+    NSButton *myButton = [[[NSButton alloc] initWithFrame:NSMakeRect(x, y, width, height)] autorelease];
+    [self addSubview: myButton];
+    [myButton setTitle: @"Button title!"];
+    [myButton setButtonType:NSMomentaryLightButton];
+    [myButton setBezelStyle:NSRoundedBezelStyle];
+    [myButton setTarget:self];
+    [myButton setAction:@selector(buttonPressed)];
+
 	return self;
+}
+
+// NOTE(Xavier): (2017.11.16) This is the callback for the button press:
+- (void) buttonPressed
+{
+    NSLog(@"Button pressed!"); 
 }
 
 //////////////////////////////////
@@ -96,7 +117,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 	[[self openGLContext] makeCurrentContext];
 	
 	// Vsync:
-	GLint swapInt = 1; // On (1) / Off (0)
+	GLint swapInt = 0; // On (1) / Off (0)
 	[[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
 	
 	// Create a display link capable of being used with all active displays:
@@ -107,12 +128,9 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 	CGLContextObj cglContext = (CGLContextObj)[[self openGLContext] CGLContextObj];
 	CGLPixelFormatObj cglPixelFormat = (CGLPixelFormatObj)[[self pixelFormat] CGLPixelFormatObj];
 	CVDisplayLinkSetCurrentCGDisplayFromOpenGLContext( displayLink, cglContext, cglPixelFormat );
-	
-	// NOTE(Xavier): (2017.11.15) I had to diable this because
-	// It was causing the glviewport to resize incorrectly.
-	// GLint dim[2] = { static_cast<int>(windowRect.size.width), static_cast<int>(windowRect.size.height) };
-	// CGLSetParameter( cglContext, kCGLCPSurfaceBackingSize, dim );
-	// CGLEnable( cglContext, kCGLCESurfaceBackingSize );
+
+	GLint sync = 0;
+	CGLSetParameter(cglContext, kCGLCPSwapInterval, &sync);
 	
 	[appLock lock];
 	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);

@@ -12,4 +12,4 @@ LIBS="-framework Cocoa -framework Quartz -framework OpenGL -l freetype "
 INCLUDE_PATH="-I libs/include"
 LIB_PATH="-L libs"
 
-clang++ -std=c++14 -arch x86_64 $LIBS $LIB_PATH $INCLUDE_PATH $OBJC_FILES $CPP_FILES $OUTPUT
+clang++ -g -std=c++14 -arch x86_64 $LIBS $LIB_PATH $INCLUDE_PATH $OBJC_FILES $CPP_FILES $OUTPUT

@@ -162,5 +162,4 @@ Temporary Items
 
 # Additions:
 build/*
-other/xcodedebug/*
 *.sublime-workspace

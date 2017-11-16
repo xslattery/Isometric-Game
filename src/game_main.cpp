@@ -1,6 +1,7 @@
 #include <OpenGL/gl3.h>
 #include <cstddef>
 #include <iostream>
+#include <mach/mach_time.h>
 
 #include "platform/platform.h"
 
@@ -184,6 +185,16 @@ void render ( const WindowInfo& window )
 	GLCALL( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ) );
 	
 	GLCALL( glDrawArrays( GL_TRIANGLES, 0, 3 ) );
+
+	// static uint64_t startTime = mach_absolute_time();
+	// uint64_t endTime = mach_absolute_time();
+	// uint64_t elapsedTime = endTime - startTime;
+	// startTime = mach_absolute_time();
+	// mach_timebase_info_data_t info;
+	// if (mach_timebase_info (&info) != KERN_SUCCESS) { printf ("mach_timebase_info failed\n"); }
+	// uint64_t nanosecs = elapsedTime * info.numer / info.denom;
+	// uint64_t millisecs = nanosecs / 1000000;
+	// std::cout << millisecs << "ms\n";
 }
 
 void resize ( const WindowInfo& window )
