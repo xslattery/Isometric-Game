@@ -34,6 +34,8 @@ struct WindowInfo
 	float height;
 	float hidpi_width;
 	float hidpi_height;
+
+	float deltaTime;
 };
 
 ////////////////////////////

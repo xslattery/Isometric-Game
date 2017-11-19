@@ -1,7 +1,6 @@
 #include <OpenGL/gl3.h>
 #include <cstddef>
 #include <iostream>
-#include <mach/mach_time.h>
 
 #include "platform/platform.h"
 #include "math.hpp"
@@ -66,9 +65,9 @@ static unsigned int load_shader ( const std::string& vertexShader, const std::st
 	return program;
 }
 
-void set_uniform_mat4 ( const GLint programID, const GLchar* name, mat4* matrix )
+void set_uniform_mat4 ( const unsigned int shader, const char *name, mat4 *matrix )
 {
-    glUniformMatrix4fv( glGetUniformLocation( programID, name ), 1, GL_FALSE, (float*)matrix );
+    glUniformMatrix4fv( glGetUniformLocation( shader, name ), 1, GL_FALSE, (float*)matrix );
 }
 
 void init ( const WindowInfo& window )
@@ -200,19 +199,14 @@ void input ( const WindowInfo& window, const InputInfo& input )
 
 void render ( const WindowInfo& window )
 {
-	GLCALL( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ) );
-
-	GLCALL( glDrawArrays( GL_TRIANGLES, 0, 3 ) );
-
-	// static uint64_t startTime = mach_absolute_time();
-	// uint64_t endTime = mach_absolute_time();
-	// uint64_t elapsedTime = endTime - startTime;
-	// startTime = mach_absolute_time();
-	// mach_timebase_info_data_t info;
-	// if (mach_timebase_info (&info) != KERN_SUCCESS) { printf ("mach_timebase_info failed\n"); }
-	// uint64_t nanosecs = elapsedTime * info.numer / info.denom;
-	// uint64_t millisecs = nanosecs / 1000000;
-	// std::cout << millisecs << "ms\n";
+	// NOTE(Xavier): (2017.11.19) This was done to fix the OpenGL error 1286 when
+	// the window is resizing.
+	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE )
+	{
+		GLCALL( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ) );
+		
+		GLCALL( glDrawArrays( GL_TRIANGLES, 0, 3 ) );
+	}
 }
 
 void resize ( const WindowInfo& window )

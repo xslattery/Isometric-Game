@@ -950,11 +950,11 @@ inline mat4 scale ( const mat4& m, const vec3& s )
 
 inline mat4 rotate ( const mat4& m, const vec3& v, float a )
 {
-	const float s = sin(a);
-	const float c = cos(a);
+	const float s = sin( a );
+	const float c = cos( a );
 
-	vec3 axis( normalize(v) );
-	vec3 temp( (vec3(1) - c) * axis );
+	const vec3 axis( normalize(v) );
+	const vec3 temp( (vec3(1) - c) * axis );
 
 	mat4 Rotate(0);
 	Rotate[0][0] = c + temp[0] * axis[0];

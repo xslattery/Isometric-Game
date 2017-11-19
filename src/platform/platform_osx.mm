@@ -1,8 +1,10 @@
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/CVDisplayLink.h>
 #import <OpenGL/OpenGL.h>
-#include <OpenGL/gl3.h>
-#include "platform.h"
+#import <OpenGL/gl3.h>
+#import <mach/mach_time.h>
+
+#import "platform.h"
 
 //////////////////////////////////
 // Display Link Callback:
@@ -20,6 +22,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 	NSRecursiveLock* appLock;
 
 	WindowInfo windowInfo;
+	mach_timebase_info_data_t timingInfo;
 }    
 @end
 
@@ -141,7 +144,10 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 		windowInfo.height = windowRect.size.height;
 		windowInfo.hidpi_width = [self convertRectToBacking:[self bounds]].size.width;
 		windowInfo.hidpi_height = [self convertRectToBacking:[self bounds]].size.height;
+		windowInfo.deltaTime = 0;
 		init( windowInfo );
+
+		if ( mach_timebase_info (&timingInfo) != KERN_SUCCESS ) { printf ("mach_timebase_info failed\n"); }
 
 	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]); 
 	[appLock unlock];
@@ -360,6 +366,12 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 
 		// NOTE(Xavier): (2017.11.15) This is where the render
 		// call to multiplatform section is:
+		static std::size_t startTime = mach_absolute_time();
+		std::size_t endTime = mach_absolute_time();
+		std::size_t elapsedTime = endTime - startTime;
+		startTime = mach_absolute_time();
+		float millisecs = (elapsedTime * timingInfo.numer / timingInfo.denom) / 1000000;
+		windowInfo.deltaTime = millisecs;
 		render( windowInfo );
 
 		CGLFlushDrawable((CGLContextObj)[[self openGLContext] CGLContextObj]);
@@ -380,6 +392,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		render( windowInfo );
+
 		CGLFlushDrawable((CGLContextObj)[[self openGLContext] CGLContextObj]);
 
 	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
@@ -414,7 +427,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) resumeDisplayRenderer
 {
 	[appLock lock];
-		CVDisplayLinkStop(displayLink);
+		CVDisplayLinkStart(displayLink);
 	[appLock unlock];
 }
 
@@ -530,8 +543,7 @@ int main( int argc, const char *argv[] )
 	id appMenu = [[NSMenu new] autorelease];
 	id appName = [[NSProcessInfo processInfo] processName];
 	id quitTitle = [@"Quit " stringByAppendingString:appName];
-	id quitMenuItem = [[[NSMenuItem alloc] initWithTitle:quitTitle
-		action:@selector(terminate:) keyEquivalent:@"q"] autorelease];
+	id quitMenuItem = [[[NSMenuItem alloc] initWithTitle:quitTitle action:@selector(terminate:) keyEquivalent:@"q"] autorelease];
 	[appMenu addItem:quitMenuItem];
 	[appMenuItem setSubmenu:appMenu];
 
@@ -550,10 +562,10 @@ int main( int argc, const char *argv[] )
 	[window setCollectionBehavior: NSWindowCollectionBehaviorFullScreenPrimary];
 
 	// Show window and run event loop:
-	[window orderFrontRegardless]; 
-	[NSApp run]; 
+	[window orderFrontRegardless];
+	[NSApp run];
 	
-	[pool drain]; 
+	[pool drain];
  
 	return (0); 
 }
