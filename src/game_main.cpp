@@ -4,6 +4,7 @@
 #include <mach/mach_time.h>
 
 #include "platform/platform.h"
+#include "math.hpp"
 
 // NOTE(Xavier): (2017.11.15) This should be defined at compile 
 // time by argument, so it can be changed depending on the type of build.
@@ -65,6 +66,11 @@ static unsigned int load_shader ( const std::string& vertexShader, const std::st
 	return program;
 }
 
+void set_uniform_mat4 ( const GLint programID, const GLchar* name, mat4* matrix )
+{
+    glUniformMatrix4fv( glGetUniformLocation( programID, name ), 1, GL_FALSE, (float*)matrix );
+}
+
 void init ( const WindowInfo& window )
 {
 	std::cout << "Initialize\n";
@@ -89,11 +95,14 @@ void init ( const WindowInfo& window )
 			layout(location = 0) in vec4 position;
 			layout(location = 1) in vec4 color;
 
+			uniform mat4 projection;
+			uniform mat4 view;
+
 			out vec4 vertColor;
 
 			void main ()
 			{
-				gl_Position = position;
+				gl_Position = projection * view * position;
 				vertColor = color;
 			}
 		)",
@@ -112,6 +121,15 @@ void init ( const WindowInfo& window )
 	);
 
 	GLCALL( glUseProgram( shader ) );
+
+	mat4 projection = orthographic_projection( -window.height/2, window.height/2, -window.width/2, window.width/2, 0, 100 );
+	set_uniform_mat4( shader, "projection", &projection );
+
+	mat4 camera;
+	camera = scale( camera, vec3(100, 100, 1) );
+	camera = rotate( camera, vec3(0, 0, 1), 2);
+	camera = translate( camera, vec3(1, 0, 0)*100 );
+	GLCALL( set_uniform_mat4( 1, "view", &camera ) );
 
 	float verts [] =
 	{
@@ -183,7 +201,7 @@ void input ( const WindowInfo& window, const InputInfo& input )
 void render ( const WindowInfo& window )
 {
 	GLCALL( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ) );
-	
+
 	GLCALL( glDrawArrays( GL_TRIANGLES, 0, 3 ) );
 
 	// static uint64_t startTime = mach_absolute_time();
