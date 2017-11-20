@@ -124,6 +124,22 @@ inline vec2& operator - ( vec2&& v1, const vec2& v2 )
 }
 
 /////////////////////////////////
+inline vec2& operator - ( vec2& v1 )
+{
+	v1.x = -v1.x;
+	v1.y = -v1.y;
+	return v1;
+}
+
+/////////////////////////////////
+inline vec2& operator - ( vec2&& v1 )
+{
+	v1.x = -v1.x;
+	v1.y = -v1.y;
+	return v1;
+}
+
+/////////////////////////////////
 inline vec2& operator * ( vec2& v1, const vec2& v2 )
 {
 	v1.x *= v2.x;
@@ -377,6 +393,24 @@ inline vec3& operator - ( vec3&& v1, const vec3& v2 )
 	v1.x -= v2.x;
 	v1.y -= v2.y;
 	v1.z -= v2.z;
+	return v1;
+}
+
+/////////////////////////////////
+inline vec3& operator - ( vec3& v1 )
+{
+	v1.x = -v1.x;
+	v1.y = -v1.y;
+	v1.z = -v1.z;
+	return v1;
+}
+
+/////////////////////////////////
+inline vec3& operator - ( vec3&& v1 )
+{
+	v1.x = -v1.x;
+	v1.y = -v1.y;
+	v1.z = -v1.z;
 	return v1;
 }
 
@@ -676,6 +710,25 @@ inline vec4& operator - ( vec4&& v1, const vec4& v2 )
 	v1.y -= v2.y;
 	v1.z -= v2.z;
 	v1.w -= v2.w;
+	return v1;
+}
+
+/////////////////////////////////
+inline vec4& operator - ( vec4& v1 )
+{
+	v1.x = -v1.x;
+	v1.y = -v1.y;
+	v1.z = -v1.z;
+	v1.w = -v1.w;
+	return v1;
+}
+
+/////////////////////////////////
+inline vec4& operator - ( vec4&& v1 )
+{
+	v1.x = -v1.x;
+	v1.y = -v1.y;
+	v1.z = -v1.z;
 	return v1;
 }
 

@@ -21,25 +21,25 @@ static mat4 camera;
 void init ( const WindowInfo& window )
 {
 	std::cout << "Initialize\n";
-	std::cout << "OpenGL Vendor: " << glGetString(GL_VENDOR) << '\n';
-	std::cout << "OpenGL Renderer: " << glGetString(GL_RENDERER) << '\n';
-	std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << '\n';
-    std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << '\n';
+	std::cout << "OpenGL Vendor: " << glGetString(GL_VENDOR) << '\n'; GLCALL;
+	std::cout << "OpenGL Renderer: " << glGetString(GL_RENDERER) << '\n'; GLCALL;
+	std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << '\n'; GLCALL;
+    std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << '\n'; GLCALL;
 
-	GLCALL( glEnable( GL_FRAMEBUFFER_SRGB ) );
+	glEnable( GL_FRAMEBUFFER_SRGB ); GLCALL;
 	
-	GLCALL( glEnable( GL_DEPTH_TEST ) );
+	glEnable( GL_DEPTH_TEST ); GLCALL;
 	
-	GLCALL( glEnable( GL_CULL_FACE ) );
-	GLCALL( glCullFace( GL_BACK ) );
+	glEnable( GL_CULL_FACE ); GLCALL;
+	glCullFace( GL_BACK ); GLCALL;
 	
-	GLCALL( glEnable( GL_BLEND) );
-	GLCALL( glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
-	GLCALL( glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO) );
+	glEnable( GL_BLEND); GLCALL;
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); GLCALL;
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO); GLCALL;
 	
-	GLCALL( glViewport( 0, 0, window.hidpi_width, window.hidpi_height ) );
+	glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;
     
-    GLCALL( glClearColor( 0.5f, 0.6f, 0.7f, 1.0f ) );
+    glClearColor( 0.5f, 0.6f, 0.7f, 1.0f ); GLCALL;
 
 	shader = load_shader(
 		R"(
@@ -72,7 +72,7 @@ void init ( const WindowInfo& window )
 			uniform sampler2D ourTexture;
 			uniform vec4 overlayColor;
 
-			out vec4 Color;
+			layout(location = 0) out vec4 Color;
 
 			void main ()
 			{
@@ -84,14 +84,14 @@ void init ( const WindowInfo& window )
 	);
 
 	projection = orthographic_projection( window.height, 0, 0, window.width, 0.1f, 100.0f );
-	camera = translate( camera, vec3(0, 0, -10) );
+	camera = translate( camera, -vec3(0, 0, 10) );
 
 	FT_Init_FreeType( &freeType );
 
 	packedGlyphTexture.fontsize = 64;
 	create_packed_glyph_texture( packedGlyphTexture, "res/Menlo-Regular.ttf", freeType );
 
-	textMesh.position = vec3( 0, 0, 0 );
+	textMesh.position = vec3( 10, 10, 0 );
 	textMesh.transform = translate( mat4(1), textMesh.position );	
 	textMesh.fontsize = 32;
 
@@ -148,9 +148,9 @@ void render ( const WindowInfo& window )
 	// the window is resizing.
 	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE )
 	{
-		GLCALL( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ) );
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); GLCALL;
 
-		GLCALL( glUseProgram( shader ) );
+		glUseProgram( shader ); GLCALL;
 		
 		set_uniform_mat4( shader, "projection", &projection );
 		set_uniform_mat4( shader, "view", &camera );
@@ -160,7 +160,8 @@ void render ( const WindowInfo& window )
 
 void resize ( const WindowInfo& window )
 {
-	GLCALL( glViewport( 0, 0, window.hidpi_width, window.hidpi_height ) );
+	glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;
+	projection = orthographic_projection( window.height, 0, 0, window.width, 0.1f, 100.0f );
 }
 
 void cleanup ( const WindowInfo& window )
