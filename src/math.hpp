@@ -21,7 +21,11 @@ struct vec2
 	};
 	
 	/////////////////////////////////
-	vec2 () { } // NOTE(Xavier): (2017.11.16) Should this be 0 initialised?
+	vec2 () // NOTE(Xavier): (2017.11.16) Should this be 0 initialised?
+	{
+		this->x = 0;
+		this->y = 0;
+	}
 	
 	/////////////////////////////////
 	vec2 ( float v )
@@ -255,8 +259,13 @@ struct vec3
 	};
 	
 	/////////////////////////////////
-	vec3 () { } // NOTE(Xavier): (2017.11.16) Should this be 0 initialised?
-	
+	vec3 () // NOTE(Xavier): (2017.11.16) Should this be 0 initialised?
+	{
+		this->x = 0;
+		this->y = 0;
+		this->z = 0;
+	}
+
 	/////////////////////////////////
 	vec3 ( float v )
 	{
@@ -524,15 +533,21 @@ struct vec4
 	};
 	
 	/////////////////////////////////
-	vec4 () { } // NOTE(Xavier): (2017.11.16) Should this be 0 initialised?
-	
+	vec4 () // NOTE(Xavier): (2017.11.16) Should this be 0 initialised?
+	{
+		this->x = 0;
+		this->y = 0;
+		this->z = 0;
+		this->w = 0;
+	}
+
 	/////////////////////////////////
 	vec4 ( float v )
 	{
 		this->x = v;
 		this->y = v;
 		this->z = v;
-		this->w = w;
+		this->w = v;
 	}
 	
 	/////////////////////////////////
@@ -541,7 +556,7 @@ struct vec4
 		this->x = x;
 		this->y = y;
 		this->z = z;
-		this->w += w;
+		this->w = w;
 	}
 
 	/////////////////////////////////
@@ -878,25 +893,32 @@ inline mat4 orthographic_projection ( const float b, const float t, const float 
 {
 	mat4 m;
 
-	m[0][0] = 2.0f / (r - l);
-	m[0][1] = 0;
-	m[0][2] = 0;
-	m[0][3] = 0;
+	// m[0][0] = 2.0f / (r - l);
+	// m[0][1] = 0;
+	// m[0][2] = 0;
+	// m[0][3] = 0;
 
-	m[1][0] = 0;
-	m[1][1] = 2.0f / (t - b);
-	m[1][2] = 0;
-	m[1][3] = 0;
+	// m[1][0] = 0;
+	// m[1][1] = 2.0f / (t - b);
+	// m[1][2] = 0;
+	// m[1][3] = 0;
 
-	m[2][0] = 0;
-	m[2][1] = 0;
-	m[2][2] = -2.0f / (f - n);
-	m[2][3] = 0;
+	// m[2][0] = 0;
+	// m[2][1] = 0;
+	// m[2][2] = -2.0f / (f - n);
+	// m[2][3] = 0;
 
+	// m[3][0] = -(r + l) / (r - l);
+	// m[3][1] = -(t + b) / (t - b);
+	// m[3][2] = -(f + n) / (f - n);
+	// m[3][3] = 1.0f;
+
+	m[0][0] = 2 / (r - l);
+	m[1][1] = 2 / (t - b);
+	m[2][2] = -2 / (f - n);
 	m[3][0] = -(r + l) / (r - l);
 	m[3][1] = -(t + b) / (t - b);
 	m[3][2] = -(f + n) / (f - n);
-	m[3][3] = 1.0f;
 
 	return m;
 }
@@ -931,7 +953,7 @@ inline mat4 translate ( const mat4& m, const vec3& dir )
 {
 	mat4 mat = m;
 
-	mat[3].xyz = dir;
+	mat[3].xyz += dir;
 
 	return mat;
 }
