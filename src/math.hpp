@@ -1,6 +1,12 @@
 #ifndef _MATH_HPP_
 #define _MATH_HPP_
 
+#define SSE_SUPPORT 1
+
+#if SSE_SUPPORT
+#include <x86intrin.h>
+#endif
+
 #include <cstddef>
 #include <cmath>
 #include <ostream>
@@ -21,7 +27,9 @@ struct vec2
 	};
 	
 	/////////////////////////////////
-	vec2 () // NOTE(Xavier): (2017.11.16) Should this be 0 initialised?
+	// NOTE(Xavier): (2017.11.16) Should this be 0 initialised?
+	// OR should it be uninitialised?
+	vec2 ()
 	{
 		this->x = 0;
 		this->y = 0;
@@ -275,7 +283,9 @@ struct vec3
 	};
 	
 	/////////////////////////////////
-	vec3 () // NOTE(Xavier): (2017.11.16) Should this be 0 initialised?
+	// NOTE(Xavier): (2017.11.16) Should this be 0 initialised?
+	// OR should it be uninitialised?
+	vec3 ()
 	{
 		this->x = 0;
 		this->y = 0;
@@ -564,42 +574,63 @@ struct vec4
 		{
 			vec2 xy, zw;
 		};
+		#if SSE_SUPPORT
+			__m128 sse;
+		#endif
 	};
 	
 	/////////////////////////////////
-	vec4 () // NOTE(Xavier): (2017.11.16) Should this be 0 initialised?
+	// NOTE(Xavier): (2017.11.16) Should this be 0 initialised?
+	// OR should it be uninitialised?
+	vec4 () 
 	{
+	#if SSE_SUPPORT
+		this->sse = _mm_setzero_ps();
+	#else
 		this->x = 0;
 		this->y = 0;
 		this->z = 0;
 		this->w = 0;
+	#endif
 	}
 
 	/////////////////////////////////
 	vec4 ( float v )
 	{
-		this->x = v;
-		this->y = v;
-		this->z = v;
-		this->w = v;
+		#if SSE_SUPPORT
+			this->sse = _mm_set1_ps( v );
+		#else
+			this->x = v;
+			this->y = v;
+			this->z = v;
+			this->w = v;
+		#endif
 	}
 	
 	/////////////////////////////////
 	vec4 ( float x, float y, float z, float w )
 	{
-		this->x = x;
-		this->y = y;
-		this->z = z;
-		this->w = w;
+		#if SSE_SUPPORT
+			this->sse = _mm_setr_ps( x, y, z, w );
+		#else
+			this->x = x;
+			this->y = y;
+			this->z = z;
+			this->w = w;
+		#endif
 	}
 
 	/////////////////////////////////
 	vec4 ( const vec4& v )
 	{
+	#if SSE_SUPPORT
+		this->sse = v.sse;
+	#else
 		this->x = v.x;
 		this->y = v.y;
 		this->z = v.z;
 		this->w = v.w;
+	#endif
 	}
 
 	/////////////////////////////////
@@ -627,30 +658,42 @@ struct vec4
 	/////////////////////////////////
 	vec4& operator = ( const vec4& v )
 	{
+	#if SSE_SUPPORT
+		this->sse = v.sse;
+	#else
 		this->x = v.x;
 		this->y = v.y;
 		this->z = v.z;
 		this->w = v.w;
+	#endif
 		return *this;
 	}
 
 	/////////////////////////////////
 	vec4& operator += ( const vec4& v )
 	{
+	#if SSE_SUPPORT
+		this->sse = _mm_add_ps( this->sse, v.sse );
+	#else
 		this->x += v.x;
 		this->y += v.y;
 		this->z += v.z;
 		this->w += v.w;
+	#endif
 		return *this;
 	}
 
 	/////////////////////////////////
 	vec4& operator -= ( const vec4& v )
 	{
+	#if SSE_SUPPORT
+		this->sse = _mm_sub_ps( this->sse, v.sse );
+	#else
 		this->x -= v.x;
 		this->y -= v.y;
 		this->z -= v.z;
 		this->w -= v.w;
+	#endif
 		return *this;
 	}
 
@@ -676,192 +719,283 @@ inline bool operator != ( const vec4& v1, const vec4& v2 )
 /////////////////////////////////
 inline vec4& operator + ( vec4& v1, const vec4& v2 )
 {
+#if SSE_SUPPORT
+	v1.sse = _mm_add_ps( v1.sse, v2.sse );
+#else
 	v1.x += v2.x;
 	v1.y += v2.y;
 	v1.z += v2.z;
 	v1.w += v2.w;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator + ( vec4&& v1, const vec4& v2 )
 {
+#if SSE_SUPPORT
+	v1.sse = _mm_add_ps( v1.sse, v2.sse );
+#else
 	v1.x += v2.x;
 	v1.y += v2.y;
 	v1.z += v2.z;
 	v1.w += v2.w;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator - ( vec4& v1, const vec4& v2 )
 {
+#if SSE_SUPPORT
+	v1.sse = _mm_sub_ps( v1.sse, v2.sse );
+#else
 	v1.x -= v2.x;
 	v1.y -= v2.y;
 	v1.z -= v2.z;
 	v1.w -= v2.w;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator - ( vec4&& v1, const vec4& v2 )
 {
+#if SSE_SUPPORT
+	v1.sse = _mm_sub_ps( v1.sse, v2.sse );
+#else
 	v1.x -= v2.x;
 	v1.y -= v2.y;
 	v1.z -= v2.z;
 	v1.w -= v2.w;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator - ( vec4& v1 )
 {
+#if SSE_SUPPORT
+	__m128 zero = _mm_set1_ps( 0 );
+	v1.sse = _mm_sub_ps( zero, v1.sse);
+#else
 	v1.x = -v1.x;
 	v1.y = -v1.y;
 	v1.z = -v1.z;
 	v1.w = -v1.w;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator - ( vec4&& v1 )
 {
+#if SSE_SUPPORT
+	__m128 zero = _mm_set1_ps( 0 );
+	v1.sse = _mm_sub_ps( zero, v1.sse);
+#else
 	v1.x = -v1.x;
 	v1.y = -v1.y;
 	v1.z = -v1.z;
+	v1.w = -v1.w;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator * ( vec4& v1, const vec4& v2 )
 {
+#if SSE_SUPPORT
+	v1.sse = _mm_mul_ps( v1.sse, v2.sse );
+#else
 	v1.x *= v2.x;
 	v1.y *= v2.y;
 	v1.z *= v2.z;
 	v1.w *= v2.w;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator * ( vec4&& v1, const vec4& v2 )
 {
+#if SSE_SUPPORT
+	v1.sse = _mm_mul_ps( v1.sse, v2.sse );
+#else
 	v1.x *= v2.x;
 	v1.y *= v2.y;
 	v1.z *= v2.z;
 	v1.w *= v2.w;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator / ( vec4& v1, const vec4& v2 )
 {
+#if SSE_SUPPORT
+	v1.sse = _mm_div_ps( v1.sse, v2.sse );
+#else
 	v1.x /= v2.x;
 	v1.y /= v2.y;
 	v1.z /= v2.z;
 	v1.w /= v2.w;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator / ( vec4&& v1, const vec4& v2 )
 {
+#if SSE_SUPPORT
+	v1.sse = _mm_div_ps( v1.sse, v2.sse );
+#else
 	v1.x /= v2.x;
 	v1.y /= v2.y;
 	v1.z /= v2.z;
 	v1.w /= v2.w;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator * ( vec4& v1, const float s )
 {
+#if SSE_SUPPORT
+	__m128 scalar = _mm_set1_ps( s );
+	v1.sse = _mm_mul_ps( v1.sse, scalar);
+#else
 	v1.x *= s;
 	v1.y *= s;
 	v1.z *= s;
 	v1.w *= s;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator * ( const float s, vec4& v1 )
 {
+#if SSE_SUPPORT
+	__m128 scalar = _mm_set1_ps( s );
+	v1.sse = _mm_mul_ps( v1.sse, scalar);
+#else
 	v1.x *= s;
 	v1.y *= s;
 	v1.z *= s;
 	v1.w *= s;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator * ( vec4&& v1, const float s )
 {
+#if SSE_SUPPORT
+	__m128 scalar = _mm_set1_ps( s );
+	v1.sse = _mm_mul_ps( v1.sse, scalar);
+#else
 	v1.x *= s;
 	v1.y *= s;
 	v1.z *= s;
 	v1.w *= s;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator * ( const float s, vec4&& v1 )
 {
+#if SSE_SUPPORT
+	__m128 scalar = _mm_set1_ps( s );
+	v1.sse = _mm_mul_ps( v1.sse, scalar);
+#else
 	v1.x *= s;
 	v1.y *= s;
 	v1.z *= s;
 	v1.w *= s;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4 operator * ( const vec4& v1, const float s )
 {
+#if SSE_SUPPORT
+	vec4 v = v1;
+	__m128 scalar = _mm_set1_ps( s );
+	v.sse = _mm_mul_ps( v.sse, scalar);
+#else
 	vec4 v = v1;
 	v.x *= s;
 	v.y *= s;
 	v.z *= s;
 	v.w *= s;
+#endif
 	return v;
 }
 
 /////////////////////////////////
 inline vec4 operator * ( const float s, const vec4& v1 )
 {
+#if SSE_SUPPORT
+	vec4 v = v1;
+	__m128 scalar = _mm_set1_ps( s );
+	v.sse = _mm_mul_ps( v.sse, scalar);
+#else
 	vec4 v = v1;
 	v.x *= s;
 	v.y *= s;
 	v.z *= s;
 	v.w *= s;
+#endif
 	return v;
 }
 
 /////////////////////////////////
 inline vec4& operator / ( vec4& v1, const float s )
 {
+#if SSE_SUPPORT
+	__m128 scalar = _mm_set1_ps( s );
+	v1.sse = _mm_mul_ps( v1.sse, scalar);
+#else
 	v1.x /= s;
 	v1.y /= s;
 	v1.z /= s;
 	v1.w /= s;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4& operator / ( vec4&& v1, const float s )
 {
+#if SSE_SUPPORT
+	__m128 scalar = _mm_set1_ps( s );
+	v1.sse = _mm_mul_ps( v1.sse, scalar);
+#else
 	v1.x /= s;
 	v1.y /= s;
 	v1.z /= s;
 	v1.w /= s;
+#endif
 	return v1;
 }
 
 /////////////////////////////////
 inline vec4 operator / ( const vec4& v1, const float s )
 {
+#if SSE_SUPPORT
+	vec4 v = v1;
+	__m128 scalar = _mm_set1_ps( s );
+	v.sse = _mm_div_ps( v.sse, scalar);
+#else
 	vec4 v = v1;
 	v.x /= s;
 	v.y /= s;
 	v.z /= s;
 	v.w /= s;
+#endif
 	return v;
 }
 
