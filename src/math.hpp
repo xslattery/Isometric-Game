@@ -1,15 +1,20 @@
 #ifndef _MATH_HPP_
 #define _MATH_HPP_
 
-#define SSE_SUPPORT 1
+#define ZERO_INITIALISE 1
 
+#define SSE_SUPPORT 1
+// NOTE(Xavier): (2017.11.21) SSE support needs to be tested, 
+// because the 16-byte alignment has not been taken into consideration.
+// MAYBE: create a seperate data type like 'sse_vec4'.
 #if SSE_SUPPORT
+#define SSE_ALIGNED __attribute__((aligned(16)))
 #include <x86intrin.h>
 #endif
 
-#include <cstddef>
-#include <cmath>
-#include <ostream>
+#include <cstddef>	// For - std::size_t
+#include <cmath>	// For - sin() & cos() & sqrt()
+#include <ostream>	// For - std::ostream
 
 /////////////////////////////////
 struct vec2
@@ -31,19 +36,21 @@ struct vec2
 	// OR should it be uninitialised?
 	vec2 ()
 	{
+	#if ZERO_INITIALISE
 		this->x = 0;
 		this->y = 0;
+	#endif
 	}
 	
 	/////////////////////////////////
-	vec2 ( float v )
+	vec2 ( const float& v )
 	{
 		this->x = v;
 		this->y = v;
 	}
 	
 	/////////////////////////////////
-	vec2 ( float x, float y )
+	vec2 ( const float& x, const float& y )
 	{
 		this->x = x;
 		this->y = y;
@@ -100,158 +107,66 @@ inline bool operator != ( const vec2& v1, const vec2& v2 )
 }
 
 /////////////////////////////////
-inline vec2& operator + ( vec2& v1, const vec2& v2 )
+inline vec2 operator + ( const vec2& v1, const vec2& v2 )
 {
-	v1.x += v2.x;
-	v1.y += v2.y;
-	return v1;
+	vec2 result { v1.x + v2.x, v1.y + v2.y };
+	return result;
 }
 
 /////////////////////////////////
-inline vec2& operator + ( vec2&& v1, const vec2& v2 )
+inline vec2 operator - ( const vec2& v1, const vec2& v2 )
 {
-	v1.x += v2.x;
-	v1.y += v2.y;
-	return v1;
+	vec2 result { v1.x - v2.x, v1.y - v2.y };
+	return result;
 }
 
 /////////////////////////////////
-inline vec2& operator - ( vec2& v1, const vec2& v2 )
+inline vec2 operator - ( const vec2& v1 )
 {
-	v1.x -= v2.x;
-	v1.y -= v2.y;
-	return v1;
+	vec2 result { -v1.x, -v1.y };
+	return result;
 }
 
 /////////////////////////////////
-inline vec2& operator - ( vec2&& v1, const vec2& v2 )
+inline vec2 operator * ( const vec2& v1, const vec2& v2 )
 {
-	v1.x -= v2.x;
-	v1.y -= v2.y;
-	return v1;
+	vec2 result { v1.x * v2.x, v1.y * v2.y };
+	return result;
 }
 
 /////////////////////////////////
-inline vec2& operator - ( vec2& v1 )
+inline vec2 operator / ( const vec2& v1, const vec2& v2 )
 {
-	v1.x = -v1.x;
-	v1.y = -v1.y;
-	return v1;
+	vec2 result { v1.x / v2.x, v1.y / v2.y };
+	return result;
 }
 
 /////////////////////////////////
-inline vec2& operator - ( vec2&& v1 )
+inline vec2 operator * ( const vec2& v1, const float& s )
 {
-	v1.x = -v1.x;
-	v1.y = -v1.y;
-	return v1;
+	vec2 result { v1.x * s, v1.y * s };
+	return result;
 }
 
 /////////////////////////////////
-inline vec2& operator * ( vec2& v1, const vec2& v2 )
+inline vec2 operator * ( const float& s, const vec2& v1 )
 {
-	v1.x *= v2.x;
-	v1.y *= v2.y;
-	return v1;
+	vec2 result { v1.x * s, v1.y * s };
+	return result;
 }
 
 /////////////////////////////////
-inline vec2& operator * ( vec2&& v1, const vec2& v2 )
+inline vec2 operator / ( const vec2& v1, const float& s )
 {
-	v1.x *= v2.x;
-	v1.y *= v2.y;
-	return v1;
+	vec2 result { v1.x / s, v1.y / s };
+	return result;
 }
 
 /////////////////////////////////
-inline vec2& operator / ( vec2& v1, const vec2& v2 )
+inline vec2 operator / ( const float& s, const vec2& v1 )
 {
-	v1.x /= v2.x;
-	v1.y /= v2.y;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec2& operator / ( vec2&& v1, const vec2& v2 )
-{
-	v1.x /= v2.x;
-	v1.y /= v2.y;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec2& operator * ( vec2& v1, const float s )
-{
-	v1.x *= s;
-	v1.y *= s;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec2& operator * ( const float s, vec2& v1 )
-{
-	v1.x *= s;
-	v1.y *= s;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec2& operator * ( vec2&& v1, const float s )
-{
-	v1.x *= s;
-	v1.y *= s;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec2& operator * ( const float s, vec2&& v1 )
-{
-	v1.x *= s;
-	v1.y *= s;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec2 operator * ( const vec2& v1, const float s )
-{
-	vec2 v = v1;
-	v.x *= s;
-	v.y *= s;
-	return v;
-}
-
-/////////////////////////////////
-inline vec2 operator * ( const float s, const vec2& v1 )
-{
-	vec2 v = v1;
-	v.x *= s;
-	v.y *= s;
-	return v;
-}
-
-/////////////////////////////////
-inline vec2& operator / ( vec2& v1, const float s )
-{
-	v1.x /= s;
-	v1.y /= s;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec2& operator / ( vec2&& v1, const float s )
-{
-	v1.x /= s;
-	v1.y /= s;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec2 operator / ( const vec2& v1, const float s )
-{
-	vec2 v = v1;
-	v.x /= s;
-	v.y /= s;
-	return v;
+	vec2 result { v1.x / s, v1.y / s };
+	return result;
 }
 
 /////////////////////////////////
@@ -287,13 +202,15 @@ struct vec3
 	// OR should it be uninitialised?
 	vec3 ()
 	{
+	#if ZERO_INITIALISE
 		this->x = 0;
 		this->y = 0;
 		this->z = 0;
+	#endif
 	}
 
 	/////////////////////////////////
-	vec3 ( float v )
+	vec3 ( const float& v )
 	{
 		this->x = v;
 		this->y = v;
@@ -301,7 +218,7 @@ struct vec3
 	}
 	
 	/////////////////////////////////
-	vec3 ( float x, float y, float z )
+	vec3 ( const float& x, const float& y, const float& z )
 	{
 		this->x = x;
 		this->y = y;
@@ -317,7 +234,7 @@ struct vec3
 	}
 
 	/////////////////////////////////
-	vec3 ( const vec2& v, float z )
+	vec3 ( const vec2& v, const float& z )
 	{
 		this->x = v.x;
 		this->y = v.y;
@@ -371,177 +288,66 @@ inline bool operator != ( const vec3& v1, const vec3& v2 )
 }
 
 /////////////////////////////////
-inline vec3& operator + ( vec3& v1, const vec3& v2 )
+inline vec3 operator + ( const vec3& v1, const vec3& v2 )
 {
-	v1.x += v2.x;
-	v1.y += v2.y;
-	v1.z += v2.z;
-	return v1;
+	vec3 result { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z };
+	return result;
 }
 
 /////////////////////////////////
-inline vec3& operator + ( vec3&& v1, const vec3& v2 )
+inline vec3 operator - ( const vec3& v1, const vec3& v2 )
 {
-	v1.x += v2.x;
-	v1.y += v2.y;
-	v1.z += v2.z;
-	return v1;
+	vec3 result { v1.x - v2.x, v1.y - v2.y, v1.z - v2.z };
+	return result;
 }
 
 /////////////////////////////////
-inline vec3& operator - ( vec3& v1, const vec3& v2 )
+inline vec3 operator - ( const vec3& v1 )
 {
-	v1.x -= v2.x;
-	v1.y -= v2.y;
-	v1.z -= v2.z;
-	return v1;
+	vec3 result { -v1.x, -v1.y, -v1.z };
+	return result;
 }
 
 /////////////////////////////////
-inline vec3& operator - ( vec3&& v1, const vec3& v2 )
+inline vec3 operator * ( const vec3& v1, const vec3& v2 )
 {
-	v1.x -= v2.x;
-	v1.y -= v2.y;
-	v1.z -= v2.z;
-	return v1;
+	vec3 result { v1.x * v2.x, v1.y * v2.y, v1.z * v2.z };
+	return result;
 }
 
 /////////////////////////////////
-inline vec3& operator - ( vec3& v1 )
+inline vec3 operator / ( const vec3& v1, const vec3& v2 )
 {
-	v1.x = -v1.x;
-	v1.y = -v1.y;
-	v1.z = -v1.z;
-	return v1;
+	vec3 result { v1.x / v2.x, v1.y / v2.y, v1.z / v2.z };
+	return result;
 }
 
 /////////////////////////////////
-inline vec3& operator - ( vec3&& v1 )
+inline vec3 operator * ( const vec3& v1, const float& s )
 {
-	v1.x = -v1.x;
-	v1.y = -v1.y;
-	v1.z = -v1.z;
-	return v1;
+	vec3 result { v1.x * s, v1.y * s, v1.z * s };
+	return result;
 }
 
 /////////////////////////////////
-inline vec3& operator * ( vec3& v1, const vec3& v2 )
+inline vec3 operator * ( const float& s, const vec3& v1 )
 {
-	v1.x *= v2.x;
-	v1.y *= v2.y;
-	v1.z *= v2.z;
-	return v1;
+	vec3 result { v1.x * s, v1.y * s, v1.z * s };
+	return result;
 }
 
 /////////////////////////////////
-inline vec3& operator * ( vec3&& v1, const vec3& v2 )
+inline vec3 operator / ( const vec3& v1, const float& s )
 {
-	v1.x *= v2.x;
-	v1.y *= v2.y;
-	v1.z *= v2.z;
-	return v1;
+	vec3 result { v1.x / s, v1.y / s, v1.z / s };
+	return result;
 }
 
 /////////////////////////////////
-inline vec3& operator / ( vec3& v1, const vec3& v2 )
+inline vec3 operator / ( const float& s, const vec3& v1 )
 {
-	v1.x /= v2.x;
-	v1.y /= v2.y;
-	v1.z /= v2.z;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec3& operator / ( vec3&& v1, const vec3& v2 )
-{
-	v1.x /= v2.x;
-	v1.y /= v2.y;
-	v1.z /= v2.z;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec3& operator * ( vec3& v1, const float s )
-{
-	v1.x *= s;
-	v1.y *= s;
-	v1.z *= s;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec3& operator * ( const float s, vec3& v1 )
-{
-	v1.x *= s;
-	v1.y *= s;
-	v1.z *= s;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec3& operator * ( vec3&& v1, const float s )
-{
-	v1.x *= s;
-	v1.y *= s;
-	v1.z *= s;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec3& operator * ( const float s, vec3&& v1 )
-{
-	v1.x *= s;
-	v1.y *= s;
-	v1.z *= s;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec3 operator * ( const vec3& v1, const float s )
-{
-	vec3 v = v1;
-	v.x *= s;
-	v.y *= s;
-	v.z *= s;
-	return v;
-}
-
-/////////////////////////////////
-inline vec3 operator * ( const float s, const vec3& v1 )
-{
-	vec3 v = v1;
-	v.x *= s;
-	v.y *= s;
-	v.z *= s;
-	return v;
-}
-
-/////////////////////////////////
-inline vec3& operator / ( vec3& v1, const float s )
-{
-	v1.x /= s;
-	v1.y /= s;
-	v1.z /= s;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec3& operator / ( vec3&& v1, const float s )
-{
-	v1.x /= s;
-	v1.y /= s;
-	v1.z /= s;
-	return v1;
-}
-
-/////////////////////////////////
-inline vec3 operator / ( const vec3& v1, const float s )
-{
-	vec3 v = v1;
-	v.x /= s;
-	v.y /= s;
-	v.z /= s;
-	return v;
+	vec3 result { v1.x / s, v1.y / s, v1.z / s };
+	return result;
 }
 
 /////////////////////////////////
@@ -584,6 +390,7 @@ struct vec4
 	// OR should it be uninitialised?
 	vec4 () 
 	{
+	#if ZERO_INITIALISE
 	#if SSE_SUPPORT
 		this->sse = _mm_setzero_ps();
 	#else
@@ -592,10 +399,11 @@ struct vec4
 		this->z = 0;
 		this->w = 0;
 	#endif
+	#endif
 	}
 
 	/////////////////////////////////
-	vec4 ( float v )
+	vec4 ( const float& v )
 	{
 		#if SSE_SUPPORT
 			this->sse = _mm_set1_ps( v );
@@ -608,7 +416,7 @@ struct vec4
 	}
 	
 	/////////////////////////////////
-	vec4 ( float x, float y, float z, float w )
+	vec4 ( const float& x, const float& y, const float& z, const float& w )
 	{
 		#if SSE_SUPPORT
 			this->sse = _mm_setr_ps( x, y, z, w );
@@ -634,7 +442,7 @@ struct vec4
 	}
 
 	/////////////////////////////////
-	vec4 ( const vec3& v, float w )
+	vec4 ( const vec3& v, const float& w )
 	{
 		this->xyz = v;
 		this->w = w;
@@ -648,7 +456,7 @@ struct vec4
 	}
 
 	/////////////////////////////////
-	vec4 ( const vec2& v, float z, float w )
+	vec4 ( const vec2& v, const float& z, const float& w )
 	{
 		this->xy = v;
 		this->z = z;
@@ -717,286 +525,152 @@ inline bool operator != ( const vec4& v1, const vec4& v2 )
 }
 
 /////////////////////////////////
-inline vec4& operator + ( vec4& v1, const vec4& v2 )
+inline vec4 operator + ( const vec4& v1, const vec4& v2 )
 {
 #if SSE_SUPPORT
-	v1.sse = _mm_add_ps( v1.sse, v2.sse );
+	vec4 result;
+	result.sse = _mm_add_ps( v1.sse, v2.sse );
 #else
-	v1.x += v2.x;
-	v1.y += v2.y;
-	v1.z += v2.z;
-	v1.w += v2.w;
+	vec4 result = v1;
+	result.x += v2.x;
+	result.y += v2.y;
+	result.z += v2.z;
+	result.w += v2.w;
 #endif
-	return v1;
+	return result;
 }
 
 /////////////////////////////////
-inline vec4& operator + ( vec4&& v1, const vec4& v2 )
+inline vec4 operator - ( const vec4& v1, const vec4& v2 )
 {
 #if SSE_SUPPORT
-	v1.sse = _mm_add_ps( v1.sse, v2.sse );
+	vec4 result;
+	result.sse = _mm_sub_ps( v1.sse, v2.sse );
 #else
-	v1.x += v2.x;
-	v1.y += v2.y;
-	v1.z += v2.z;
-	v1.w += v2.w;
+	vec4 result = v1;
+	result.x -= v2.x;
+	result.y -= v2.y;
+	result.z -= v2.z;
+	result.w -= v2.w;
 #endif
-	return v1;
+	return result;
 }
 
 /////////////////////////////////
-inline vec4& operator - ( vec4& v1, const vec4& v2 )
+inline vec4 operator - ( const vec4& v1 )
 {
 #if SSE_SUPPORT
-	v1.sse = _mm_sub_ps( v1.sse, v2.sse );
-#else
-	v1.x -= v2.x;
-	v1.y -= v2.y;
-	v1.z -= v2.z;
-	v1.w -= v2.w;
-#endif
-	return v1;
-}
-
-/////////////////////////////////
-inline vec4& operator - ( vec4&& v1, const vec4& v2 )
-{
-#if SSE_SUPPORT
-	v1.sse = _mm_sub_ps( v1.sse, v2.sse );
-#else
-	v1.x -= v2.x;
-	v1.y -= v2.y;
-	v1.z -= v2.z;
-	v1.w -= v2.w;
-#endif
-	return v1;
-}
-
-/////////////////////////////////
-inline vec4& operator - ( vec4& v1 )
-{
-#if SSE_SUPPORT
+	vec4 result;
 	__m128 zero = _mm_set1_ps( 0 );
-	v1.sse = _mm_sub_ps( zero, v1.sse);
+	result.sse = _mm_sub_ps( zero, v1.sse);
 #else
-	v1.x = -v1.x;
-	v1.y = -v1.y;
-	v1.z = -v1.z;
-	v1.w = -v1.w;
+	vec4 result;
+	result.x = -v1.x;
+	result.y = -v1.y;
+	result.z = -v1.z;
+	result.w = -v1.w;
 #endif
-	return v1;
+	return result;
 }
 
 /////////////////////////////////
-inline vec4& operator - ( vec4&& v1 )
+inline vec4 operator * ( const vec4& v1, const vec4& v2 )
 {
 #if SSE_SUPPORT
-	__m128 zero = _mm_set1_ps( 0 );
-	v1.sse = _mm_sub_ps( zero, v1.sse);
+	vec4 result;
+	result.sse = _mm_mul_ps( v1.sse, v2.sse );
 #else
-	v1.x = -v1.x;
-	v1.y = -v1.y;
-	v1.z = -v1.z;
-	v1.w = -v1.w;
+	vec4 result = v1;
+	result.x *= v2.x;
+	result.y *= v2.y;
+	result.z *= v2.z;
+	result.w *= v2.w;
 #endif
-	return v1;
+	return result;;
 }
 
 /////////////////////////////////
-inline vec4& operator * ( vec4& v1, const vec4& v2 )
+inline vec4 operator / ( const vec4& v1, const vec4& v2 )
 {
 #if SSE_SUPPORT
-	v1.sse = _mm_mul_ps( v1.sse, v2.sse );
+	vec4 result;
+	result.sse = _mm_div_ps( v1.sse, v2.sse );
 #else
-	v1.x *= v2.x;
-	v1.y *= v2.y;
-	v1.z *= v2.z;
-	v1.w *= v2.w;
+	vec4 result = v1;
+	result.x /= v2.x;
+	result.y /= v2.y;
+	result.z /= v2.z;
+	result.w /= v2.w;
 #endif
-	return v1;
+	return result;;
 }
 
 /////////////////////////////////
-inline vec4& operator * ( vec4&& v1, const vec4& v2 )
+inline vec4 operator * ( const vec4& v1, const float& s )
 {
 #if SSE_SUPPORT
-	v1.sse = _mm_mul_ps( v1.sse, v2.sse );
-#else
-	v1.x *= v2.x;
-	v1.y *= v2.y;
-	v1.z *= v2.z;
-	v1.w *= v2.w;
-#endif
-	return v1;
-}
-
-/////////////////////////////////
-inline vec4& operator / ( vec4& v1, const vec4& v2 )
-{
-#if SSE_SUPPORT
-	v1.sse = _mm_div_ps( v1.sse, v2.sse );
-#else
-	v1.x /= v2.x;
-	v1.y /= v2.y;
-	v1.z /= v2.z;
-	v1.w /= v2.w;
-#endif
-	return v1;
-}
-
-/////////////////////////////////
-inline vec4& operator / ( vec4&& v1, const vec4& v2 )
-{
-#if SSE_SUPPORT
-	v1.sse = _mm_div_ps( v1.sse, v2.sse );
-#else
-	v1.x /= v2.x;
-	v1.y /= v2.y;
-	v1.z /= v2.z;
-	v1.w /= v2.w;
-#endif
-	return v1;
-}
-
-/////////////////////////////////
-inline vec4& operator * ( vec4& v1, const float s )
-{
-#if SSE_SUPPORT
+	vec4 result;
 	__m128 scalar = _mm_set1_ps( s );
-	v1.sse = _mm_mul_ps( v1.sse, scalar);
+	result.sse = _mm_mul_ps( v1.sse, scalar);
 #else
-	v1.x *= s;
-	v1.y *= s;
-	v1.z *= s;
-	v1.w *= s;
+	vec4 result = v1;
+	result.x *= s;
+	result.y *= s;
+	result.z *= s;
+	result.w *= s;
 #endif
-	return v1;
+	return result;
 }
 
 /////////////////////////////////
-inline vec4& operator * ( const float s, vec4& v1 )
+inline vec4 operator * ( const float& s, const vec4& v1 )
 {
 #if SSE_SUPPORT
+	vec4 result;
 	__m128 scalar = _mm_set1_ps( s );
-	v1.sse = _mm_mul_ps( v1.sse, scalar);
+	result.sse = _mm_mul_ps( v1.sse, scalar);
 #else
-	v1.x *= s;
-	v1.y *= s;
-	v1.z *= s;
-	v1.w *= s;
+	vec4 result = v1;
+	result.x *= s;
+	result.y *= s;
+	result.z *= s;
+	result.w *= s;
 #endif
-	return v1;
+	return result;
 }
 
 /////////////////////////////////
-inline vec4& operator * ( vec4&& v1, const float s )
+inline vec4 operator / ( const vec4& v1, const float& s )
 {
 #if SSE_SUPPORT
+	vec4 result;
 	__m128 scalar = _mm_set1_ps( s );
-	v1.sse = _mm_mul_ps( v1.sse, scalar);
+	result.sse = _mm_div_ps( v1.sse, scalar);
 #else
-	v1.x *= s;
-	v1.y *= s;
-	v1.z *= s;
-	v1.w *= s;
+	vec4 result = v1;
+	result.x /= s;
+	result.y /= s;
+	result.z /= s;
+	result.w /= s;
 #endif
-	return v1;
+	return result;
 }
 
 /////////////////////////////////
-inline vec4& operator * ( const float s, vec4&& v1 )
+inline vec4 operator / ( const float& s, const vec4& v1 )
 {
 #if SSE_SUPPORT
+	vec4 result;
 	__m128 scalar = _mm_set1_ps( s );
-	v1.sse = _mm_mul_ps( v1.sse, scalar);
+	result.sse = _mm_div_ps( v1.sse, scalar);
 #else
-	v1.x *= s;
-	v1.y *= s;
-	v1.z *= s;
-	v1.w *= s;
+	vec4 result = v1;
+	result.x /= s;
+	result.y /= s;
+	result.z /= s;
+	result.w /= s;
 #endif
-	return v1;
-}
-
-/////////////////////////////////
-inline vec4 operator * ( const vec4& v1, const float s )
-{
-#if SSE_SUPPORT
-	vec4 v = v1;
-	__m128 scalar = _mm_set1_ps( s );
-	v.sse = _mm_mul_ps( v.sse, scalar);
-#else
-	vec4 v = v1;
-	v.x *= s;
-	v.y *= s;
-	v.z *= s;
-	v.w *= s;
-#endif
-	return v;
-}
-
-/////////////////////////////////
-inline vec4 operator * ( const float s, const vec4& v1 )
-{
-#if SSE_SUPPORT
-	vec4 v = v1;
-	__m128 scalar = _mm_set1_ps( s );
-	v.sse = _mm_mul_ps( v.sse, scalar);
-#else
-	vec4 v = v1;
-	v.x *= s;
-	v.y *= s;
-	v.z *= s;
-	v.w *= s;
-#endif
-	return v;
-}
-
-/////////////////////////////////
-inline vec4& operator / ( vec4& v1, const float s )
-{
-#if SSE_SUPPORT
-	__m128 scalar = _mm_set1_ps( s );
-	v1.sse = _mm_mul_ps( v1.sse, scalar);
-#else
-	v1.x /= s;
-	v1.y /= s;
-	v1.z /= s;
-	v1.w /= s;
-#endif
-	return v1;
-}
-
-/////////////////////////////////
-inline vec4& operator / ( vec4&& v1, const float s )
-{
-#if SSE_SUPPORT
-	__m128 scalar = _mm_set1_ps( s );
-	v1.sse = _mm_mul_ps( v1.sse, scalar);
-#else
-	v1.x /= s;
-	v1.y /= s;
-	v1.z /= s;
-	v1.w /= s;
-#endif
-	return v1;
-}
-
-/////////////////////////////////
-inline vec4 operator / ( const vec4& v1, const float s )
-{
-#if SSE_SUPPORT
-	vec4 v = v1;
-	__m128 scalar = _mm_set1_ps( s );
-	v.sse = _mm_div_ps( v.sse, scalar);
-#else
-	vec4 v = v1;
-	v.x /= s;
-	v.y /= s;
-	v.z /= s;
-	v.w /= s;
-#endif
-	return v;
+	return result;
 }
 
 /////////////////////////////////
@@ -1110,81 +784,87 @@ inline mat4 orthographic_projection ( const float b, const float t, const float 
 	return m;
 }
 
-// NOTE(Xavier): (2017.11.19) The following functions should probably be moved
-// into their own .cpp file. ALSO, the 'normalize' functions should probably
-// have support added for r-value and non-const reference arguments with reference return values.
+
 
 /////////////////////////////////
 inline vec2 normalize ( const vec2& v )
 {
-	float s = sqrt( v.x*v.x + v.y*v.y );
-	return vec2( v ) * s;
+	const float s = sqrt( v.x*v.x + v.y*v.y );
+	return v * s;
 }
 
 /////////////////////////////////
 inline vec3 normalize ( const vec3& v )
 {
-	float s = sqrt( v.x*v.x + v.y*v.y + v.z*v.z );
-	return vec3( v ) * s;
+	const float s = sqrt( v.x*v.x + v.y*v.y + v.z*v.z );
+	return v * s;
 }
 
 /////////////////////////////////
 inline vec4 normalize ( const vec4& v )
 {
-	float s = sqrt( v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w );
-	return vec4( v ) * s;
+	const float s = sqrt( v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w );
+	return v * s;
 }
+
+//////////////////////
+// Vector Functions:
+// TODO(Xavier): distance() - the distance between two points.
+// TODO(Xavier): length() - the length of a vector.
+// TODO(Xavier): rotate() - rotate a vector.
+// TODO(Xavier): dot_product()
+// TODO(Xavier): cross_product()
 
 /////////////////////////////////
 inline mat4 translate ( const mat4& m, const vec3& dir )
 {
-	mat4 mat = m;
+	mat4 result = m;
 
-	mat[3].xyz += dir;
+	result[3].xyz += dir;
 
-	return mat;
+	return result;
 }
 
 /////////////////////////////////
 inline mat4 scale ( const mat4& m, const vec3& s )
 {
-	mat4 mat = m;
+	mat4 result = m;
 
-	mat[0][0] *= s[0];
-	mat[1][1] *= s[1];
-	mat[2][2] *= s[2];
+	result[0][0] *= s[0];
+	result[1][1] *= s[1];
+	result[2][2] *= s[2];
 
-	return mat;
+	return result;
 }
 
-inline mat4 rotate ( const mat4& m, const vec3& v, float a )
+inline mat4 rotate ( const mat4& m, const vec3& dir, const float& a )
 {
 	const float s = sin( a );
 	const float c = cos( a );
 
-	const vec3 axis( normalize(v) );
+	const vec3 axis( normalize(dir) );
 	const vec3 temp( (vec3(1) - c) * axis );
 
-	mat4 Rotate(0);
-	Rotate[0][0] = c + temp[0] * axis[0];
-	Rotate[0][1] = 0 + temp[0] * axis[1] + s * axis[2];
-	Rotate[0][2] = 0 + temp[0] * axis[2] - s * axis[1];
+	mat4 rotate(0);
+	rotate[0][0] = c + temp[0] * axis[0];
+	rotate[0][1] = 0 + temp[0] * axis[1] + s * axis[2];
+	rotate[0][2] = 0 + temp[0] * axis[2] - s * axis[1];
 
-	Rotate[1][0] = 0 + temp[1] * axis[0] - s * axis[2];
-	Rotate[1][1] = c + temp[1] * axis[1];
-	Rotate[1][2] = 0 + temp[1] * axis[2] + s * axis[0];
+	rotate[1][0] = 0 + temp[1] * axis[0] - s * axis[2];
+	rotate[1][1] = c + temp[1] * axis[1];
+	rotate[1][2] = 0 + temp[1] * axis[2] + s * axis[0];
 
-	Rotate[2][0] = 0 + temp[2] * axis[0] + s * axis[1];
-	Rotate[2][1] = 0 + temp[2] * axis[1] - s * axis[0];
-	Rotate[2][2] = c + temp[2] * axis[2];
+	rotate[2][0] = 0 + temp[2] * axis[0] + s * axis[1];
+	rotate[2][1] = 0 + temp[2] * axis[1] - s * axis[0];
+	rotate[2][2] = c + temp[2] * axis[2];
 
-	mat4 Result(0);
-	Result[0] = m[0] * Rotate[0][0] + m[1] * Rotate[0][1] + m[2] * Rotate[0][2];
-	Result[1] = m[0] * Rotate[1][0] + m[1] * Rotate[1][1] + m[2] * Rotate[1][2];
-	Result[2] = m[0] * Rotate[2][0] + m[1] * Rotate[2][1] + m[2] * Rotate[2][2];
-	Result[3] = m[3];
+	mat4 result{0};
+	result[0] = m[0] * rotate[0][0] + m[1] * rotate[0][1] + m[2] * rotate[0][2];
+	result[1] = m[0] * rotate[1][0] + m[1] * rotate[1][1] + m[2] * rotate[1][2];
+	result[2] = m[0] * rotate[2][0] + m[1] * rotate[2][1] + m[2] * rotate[2][2];
+	result[3] = m[3];
 	
-	return Result;
+	return result;
 }
 
 #endif
