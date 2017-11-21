@@ -12,6 +12,53 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 
 
 //////////////////////////////////
+// AppDelegate Interface:
+@interface AppDelegate : NSObject<NSApplicationDelegate>
+{	
+}
+@end
+
+
+//////////////////////////////////
+// AppDelegate Implementation:
+@implementation AppDelegate
+
+- (void) applicationWillFinishLaunching: (NSNotification *)notification 
+{
+	// Next, we need to create the menu bar. You don't need to give the first item in the menubar a name 
+	// (it will get the application's name automatically)
+	id menubar = [[NSMenu new] autorelease];
+	id appMenuItem = [[NSMenuItem new] autorelease];
+	[menubar addItem:appMenuItem];
+	[NSApp setMainMenu:menubar];
+
+	// Then we add the quit item to the menu. Fortunately the action is simple since terminate: is 
+	// already implemented in NSApplication and the NSApplication is always in the responder chain.
+	id appMenu = [[NSMenu new] autorelease];
+	id appName = [[NSProcessInfo processInfo] processName];
+	id quitTitle = [@"Quit " stringByAppendingString:appName];
+	id quitMenuItem = [[[NSMenuItem alloc] initWithTitle:quitTitle action:@selector(terminate:) keyEquivalent:@"q"] autorelease];
+	[appMenu addItem:quitMenuItem];
+	[appMenuItem setSubmenu:appMenu];
+}
+
+- (void) applicationDidFinishLaunching: (NSNotification *)notification
+{
+	// Since Snow Leopard, programs without application bundles and Info.plist files don't get a menubar 
+	// and can't be brought to the front unless the presentation option is changed
+	[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+	[NSApp activateIgnoringOtherApps:YES];
+}
+
+- (BOOL) applicationShouldTerminateAfterLastWindowClosed: (NSApplication*)sender
+{
+	return YES;
+}
+
+@end
+
+
+//////////////////////////////////
 // View Interface:
 @interface View : NSOpenGLView <NSWindowDelegate>
 {
@@ -23,7 +70,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 
 	WindowInfo windowInfo;
 	mach_timebase_info_data_t timingInfo;
-}    
+}
 @end
 
 
@@ -459,8 +506,6 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 
 		[appLock unlock];
 	}
-
-	[NSApp terminate:self];
 }
 
 //////////////////////////////////
@@ -503,6 +548,9 @@ int main( int argc, const char *argv[] )
 	// This will initialize the global variable 
 	// 'NSApp' with the application instance. 
 	[NSApplication sharedApplication];
+
+	[NSApp setDelegate:[[AppDelegate alloc] init]];
+	[NSApp finishLaunching];
  	
 	// Window bounds (x, y, width, height):
 	NSRect screenRect = [[NSScreen mainScreen] frame];
@@ -526,27 +574,6 @@ int main( int argc, const char *argv[] )
 	NSWindowController *windowController = [[NSWindowController alloc] initWithWindow:window]; 
 	[windowController autorelease]; 
 
-	// Since Snow Leopard, programs without application bundles and Info.plist files don't get a menubar 
-	// and can't be brought to the front unless the presentation option is changed
-	[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-	[NSApp activateIgnoringOtherApps:YES];
-	
-	// Next, we need to create the menu bar. You don't need to give the first item in the menubar a name 
-	// (it will get the application's name automatically)
-	id menubar = [[NSMenu new] autorelease];
-	id appMenuItem = [[NSMenuItem new] autorelease];
-	[menubar addItem:appMenuItem];
-	[NSApp setMainMenu:menubar];
-
-	// Then we add the quit item to the menu. Fortunately the action is simple since terminate: is 
-	// already implemented in NSApplication and the NSApplication is always in the responder chain.
-	id appMenu = [[NSMenu new] autorelease];
-	id appName = [[NSProcessInfo processInfo] processName];
-	id quitTitle = [@"Quit " stringByAppendingString:appName];
-	id quitMenuItem = [[[NSMenuItem alloc] initWithTitle:quitTitle action:@selector(terminate:) keyEquivalent:@"q"] autorelease];
-	[appMenu addItem:quitMenuItem];
-	[appMenuItem setSubmenu:appMenu];
-
 	// Create app delegate to handle system events:
 	View* view = [[[View alloc] initWithFrame:windowRect] autorelease];
 	view->windowRect = windowRect;
@@ -556,7 +583,7 @@ int main( int argc, const char *argv[] )
 	[window setDelegate:view];
 
 	// Set app title:
-	[window setTitle:appName];
+	[window setTitle:[[NSProcessInfo processInfo] processName]];
 
 	// Add fullscreen button:
 	[window setCollectionBehavior: NSWindowCollectionBehaviorFullScreenPrimary];
@@ -566,6 +593,6 @@ int main( int argc, const char *argv[] )
 	[NSApp run];
 	
 	[pool drain];
- 
-	return (0); 
+	
+	return 0;
 }

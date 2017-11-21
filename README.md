@@ -19,7 +19,7 @@ As this project uses Apples API's it is macos / osx dependent. The libraries / f
 All the above libraries / frameworks can be found on all modern macos / osx installs. It is recomended that you have Xcode installed for this project.
 
 #### Windows:
-*This part of the project development has not yet begun.*
+*This part of the project has not yet begun development.*
 
 ## Build Process:
 This project includes a **bash build script** (for OSX) that when run will build the project.
