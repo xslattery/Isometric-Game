@@ -2,7 +2,7 @@
 
 #include "shader.hpp"
 
-unsigned int compile_shader ( unsigned int type, const std::string& source )
+static unsigned int compile_shader ( unsigned int type, const std::string& source )
 {
 	unsigned int shader = glCreateShader( type ); GLCALL;
 	const char *src = source.c_str();
@@ -44,6 +44,11 @@ unsigned int load_shader ( const std::string& vertexShader, const std::string& f
 	glDeleteShader(fs); GLCALL;
 
 	return program;
+}
+
+void delete_shader( unsigned int shader )
+{
+	glDeleteProgram( shader );
 }
 
 void set_uniform_float ( const unsigned int shader, const char *name, float value )

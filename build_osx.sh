@@ -5,7 +5,7 @@ cd "$DIR_PATH";
 
 OUTPUT="-o build/osx"
 
-CPP_FILES="src/*.cpp"
+CPP_FILES="src/*.cpp src/scenes/*.cpp"
 OBJC_FILES="src/platform/*.mm"
 
 LIBS="-framework Cocoa -framework Quartz -framework OpenGL -l freetype "

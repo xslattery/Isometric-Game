@@ -236,3 +236,16 @@ void render_text_mesh( Text_Mesh &tm, unsigned int shader )
 	glBindVertexArray( tm.vao ); GLCALL;
 	glDrawElements( GL_TRIANGLES, tm.num_indices, GL_UNSIGNED_INT, 0 ); GLCALL;
 }
+
+Packed_Glyph_Texture::~Packed_Glyph_Texture()
+{
+	if ( id != 0 ) glDeleteTextures( 1, &id );
+}
+
+Text_Mesh::~Text_Mesh()
+{
+	if ( vao != 0 ) glDeleteVertexArrays( 1, &vao );
+	if ( vbo_vertices != 0 ) glDeleteBuffers( 1, &vbo_vertices );
+	if ( vbo_colors != 0 ) glDeleteBuffers( 1, &vbo_colors );
+	if ( ebo != 0 ) glDeleteBuffers( 1, &ebo );
+}

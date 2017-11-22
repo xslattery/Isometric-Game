@@ -20,10 +20,12 @@ struct Packed_Glyph_Texture
 	int width;
 	int height;
 	int fontsize;
-	unsigned int id;
+	unsigned int id = 0;
 
 	#define CHARACTER_COUNT 256
 	Glyph glyphs[ CHARACTER_COUNT ];
+
+	~Packed_Glyph_Texture();
 };
 
 struct Text_Mesh
@@ -35,12 +37,14 @@ struct Text_Mesh
 	vec3 position;
 	mat4 transform;
 
-	unsigned int texture_id;
-	unsigned int vao;
-	unsigned int vbo_vertices;
-	unsigned int vbo_colors;
-	unsigned int ebo;
-	unsigned int num_indices;
+	unsigned int texture_id = 0;
+	unsigned int vao = 0;
+	unsigned int vbo_vertices = 0;
+	unsigned int vbo_colors = 0;
+	unsigned int ebo = 0;
+	unsigned int num_indices = 0;
+
+	~Text_Mesh();
 };
 
 void create_packed_glyph_texture( Packed_Glyph_Texture &pgt, const char* filename, FT_Library freeType, unsigned int filter = GL_LINEAR );

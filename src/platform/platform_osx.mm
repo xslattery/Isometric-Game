@@ -211,6 +211,8 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void)mouseMoved:(NSEvent*)event
 {
 	[appLock lock];
+	[[self openGLContext] makeCurrentContext];
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 		InputInfo inputInfo = {};
@@ -219,6 +221,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 		inputInfo.mouseY = point.y;
 		input( windowInfo, inputInfo );
 
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -226,6 +229,8 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) mouseDragged: (NSEvent*)event
 {
 	[appLock lock];
+	[[self openGLContext] makeCurrentContext];
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 		InputInfo inputInfo = {};
@@ -234,6 +239,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 		inputInfo.mouseY = point.y;
 		input( windowInfo, inputInfo );
 
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -241,6 +247,8 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) scrollWheel: (NSEvent*)event
 {
 	[appLock lock];
+	[[self openGLContext] makeCurrentContext];
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 		InputInfo inputInfo = {};
@@ -251,6 +259,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 		inputInfo.mouseScrollDeltaY = [event deltaY];
 		input( windowInfo, inputInfo );
 
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -258,6 +267,8 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) mouseDown: (NSEvent*)event
 {
 	[appLock lock];
+	[[self openGLContext] makeCurrentContext];
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 		InputInfo inputInfo = {};
@@ -267,6 +278,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 		inputInfo.mouseButton = MouseButton::Left;
 		input( windowInfo, inputInfo );
 
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -274,6 +286,8 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) mouseUp: (NSEvent*)event
 {
 	[appLock lock];
+	[[self openGLContext] makeCurrentContext];
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 		InputInfo inputInfo = {};
@@ -283,6 +297,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 		inputInfo.mouseButton = MouseButton::Left;
 		input( windowInfo, inputInfo );
 
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -290,6 +305,8 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) rightMouseDown: (NSEvent*)event
 {
 	[appLock lock];
+	[[self openGLContext] makeCurrentContext];
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 		InputInfo inputInfo = {};
@@ -299,6 +316,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 		inputInfo.mouseButton = MouseButton::Right;
 		input( windowInfo, inputInfo );
 	
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -306,6 +324,8 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) rightMouseUp: (NSEvent*)event
 {
 	[appLock lock];
+	[[self openGLContext] makeCurrentContext];
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 		InputInfo inputInfo = {};
@@ -315,6 +335,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 		inputInfo.mouseButton = MouseButton::Right;
 		input( windowInfo, inputInfo );
 
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -322,6 +343,8 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) otherMouseDown: (NSEvent*)event
 {
 	[appLock lock];
+	[[self openGLContext] makeCurrentContext];
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 		InputInfo inputInfo = {};
@@ -331,6 +354,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 		inputInfo.mouseButton = MouseButton::Middle;
 		input( windowInfo, inputInfo );
 
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -338,6 +362,8 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) otherMouseUp: (NSEvent*)event
 {
 	[appLock lock];
+	[[self openGLContext] makeCurrentContext];
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 		InputInfo inputInfo = {};
@@ -347,6 +373,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 		inputInfo.mouseButton = MouseButton::Middle;
 		input( windowInfo, inputInfo );
 
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -354,11 +381,14 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) mouseEntered: (NSEvent*)event
 {
 	[appLock lock];
+	[[self openGLContext] makeCurrentContext];
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 
 		InputInfo inputInfo = {};
 		inputInfo.type = InputType::MouseEnter;
 		input( windowInfo, inputInfo );
 
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -366,11 +396,14 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) mouseExited: (NSEvent*)event
 {
 	[appLock lock];
-		
+	[[self openGLContext] makeCurrentContext];
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
+
 		InputInfo inputInfo = {};
 		inputInfo.type = InputType::MouseExit;
 		input( windowInfo, inputInfo );
 
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -378,6 +411,8 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) keyDown: (NSEvent*)event
 {
 	[appLock lock];
+	[[self openGLContext] makeCurrentContext];								// NOTE(Xavier): (2017.11.22) These 2 lines + the 'CGLUnlockContext' have 
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);	// been added to allow for opengl calls to be made upon user input.
 		
 		if ([event isARepeat] == NO)
 		{
@@ -387,6 +422,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 			input( windowInfo, inputInfo );
 		}
 
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]); // ^ Above Note ^
 	[appLock unlock];
 }
 
@@ -394,12 +430,15 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) keyUp: (NSEvent*)event
 {
 	[appLock lock];
-		
+	[[self openGLContext] makeCurrentContext];
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
+
 		InputInfo inputInfo = {};
 		inputInfo.type = InputType::KeyUp;
 		inputInfo.keyCode = [event keyCode];
 		input( windowInfo, inputInfo );
 
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
