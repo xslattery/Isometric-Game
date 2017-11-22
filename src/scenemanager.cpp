@@ -68,7 +68,7 @@ void Scene_Manager::resize_scene ( const WindowInfo& window )
 	}
 }
 
-void Scene_Manager::input_scene( const WindowInfo& window, const InputInfo& input )
+void Scene_Manager::input_scene( const WindowInfo& window, InputInfo* input )
 {
 	if ( activeScene != nullptr ) { activeScene->input( window, input ); }
 	else
@@ -107,11 +107,11 @@ void Scene_Manager::set_update_rate ( const int& rate ) { updateRate = rate; }
 
 ///////////////////////////////////////
 // Logic Thread Methods & Data:
-void Scene_Manager::update_scene()
+void Scene_Manager::simulate_scene()
 {
 	if ( shouldUpdate )
 	{
-		if ( activeScene != nullptr ) { activeScene->update(); }
+		if ( activeScene != nullptr ) { activeScene->simulate(); }
 		else
 		{
 			// Because there is no acive scene this medhod

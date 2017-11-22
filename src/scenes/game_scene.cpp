@@ -86,9 +86,9 @@ void Game_Scene::resize ( const WindowInfo& window )
 	projection = orthographic_projection( window.height, 0, 0, window.width, 0.1f, 100.0f );
 }
 
-void Game_Scene::input ( const WindowInfo& window, const InputInfo& input )
+void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 {
-	if ( input.type == InputType::KeyDown && input.keyCode == Keys::Key_SPACE )
+	if ( get_key_down( input, Key::Key_SPACE ) )
 	{
 		Scene_Manager::change_scene( SceneType::MainMenu, window );
 	}
@@ -96,7 +96,7 @@ void Game_Scene::input ( const WindowInfo& window, const InputInfo& input )
 
 //////////////////////////////////////
 // Logic Thread - Methods & Data:
-void Game_Scene::update ()
+void Game_Scene::simulate ()
 {
 	std::cout << "Game Scene\n";
 }

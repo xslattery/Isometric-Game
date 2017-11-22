@@ -69,6 +69,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 	NSRecursiveLock* appLock;
 
 	WindowInfo windowInfo;
+	InputInfo inputInfo;
 	mach_timebase_info_data_t timingInfo;
 }
 @end
@@ -185,6 +186,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 	[appLock lock];
 	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	
+		inputInfo = { 0 };
 		// NOTE(Xavier): (2017.11.15) This is where the first
 		// entry point to the main section of the application is:
 		windowInfo.width = windowRect.size.width;
@@ -211,17 +213,11 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void)mouseMoved:(NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-		InputInfo inputInfo = {};
-		inputInfo.type = InputType::MouseMove;
 		inputInfo.mouseX = point.x;
 		inputInfo.mouseY = point.y;
-		input( windowInfo, inputInfo );
 
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -229,17 +225,11 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) mouseDragged: (NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-		InputInfo inputInfo = {};
-		inputInfo.type = InputType::MouseDrag;
 		inputInfo.mouseX = point.x;
 		inputInfo.mouseY = point.y;
-		input( windowInfo, inputInfo );
 
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -247,19 +237,13 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) scrollWheel: (NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-		InputInfo inputInfo = {};
-		inputInfo.type = InputType::MouseScroll;
 		inputInfo.mouseX = point.x;
 		inputInfo.mouseY = point.y;
 		inputInfo.mouseScrollDeltaX = [event deltaX];
 		inputInfo.mouseScrollDeltaY = [event deltaY];
-		input( windowInfo, inputInfo );
 
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -267,18 +251,13 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) mouseDown: (NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-		InputInfo inputInfo = {};
-		inputInfo.type = InputType::MouseDown;
 		inputInfo.mouseX = point.x;
 		inputInfo.mouseY = point.y;
-		inputInfo.mouseButton = MouseButton::Left;
-		input( windowInfo, inputInfo );
+		inputInfo.activeMouseButtons[0] = true;
+		inputInfo.downMouseButtons[0] = true;
 
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -286,18 +265,13 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) mouseUp: (NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-		InputInfo inputInfo = {};
-		inputInfo.type = InputType::MouseUp;
 		inputInfo.mouseX = point.x;
 		inputInfo.mouseY = point.y;
-		inputInfo.mouseButton = MouseButton::Left;
-		input( windowInfo, inputInfo );
+		inputInfo.activeMouseButtons[0] = false;
+		inputInfo.upMouseButtons[0] = true;
 
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -305,18 +279,13 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) rightMouseDown: (NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-		InputInfo inputInfo = {};
-		inputInfo.type = InputType::MouseDown;
 		inputInfo.mouseX = point.x;
 		inputInfo.mouseY = point.y;
-		inputInfo.mouseButton = MouseButton::Right;
-		input( windowInfo, inputInfo );
+		inputInfo.activeMouseButtons[1] = true;
+		inputInfo.downMouseButtons[1] = true;
 	
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -324,18 +293,13 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) rightMouseUp: (NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-		InputInfo inputInfo = {};
-		inputInfo.type = InputType::MouseUp;
 		inputInfo.mouseX = point.x;
 		inputInfo.mouseY = point.y;
-		inputInfo.mouseButton = MouseButton::Right;
-		input( windowInfo, inputInfo );
+		inputInfo.activeMouseButtons[1] = false;
+		inputInfo.upMouseButtons[1] = true;
 
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -343,18 +307,13 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) otherMouseDown: (NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-		InputInfo inputInfo = {};
-		inputInfo.type = InputType::MouseDown;
 		inputInfo.mouseX = point.x;
 		inputInfo.mouseY = point.y;
-		inputInfo.mouseButton = MouseButton::Middle;
-		input( windowInfo, inputInfo );
+		inputInfo.activeMouseButtons[2] = true;
+		inputInfo.downMouseButtons[2] = true;
 
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -362,18 +321,13 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) otherMouseUp: (NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
 		NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-		InputInfo inputInfo = {};
-		inputInfo.type = InputType::MouseUp;
 		inputInfo.mouseX = point.x;
 		inputInfo.mouseY = point.y;
-		inputInfo.mouseButton = MouseButton::Middle;
-		input( windowInfo, inputInfo );
+		inputInfo.activeMouseButtons[2] = false;
+		inputInfo.upMouseButtons[2] = true;
 
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -381,14 +335,10 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) mouseEntered: (NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 
-		InputInfo inputInfo = {};
-		inputInfo.type = InputType::MouseEnter;
-		input( windowInfo, inputInfo );
+		// TODO(Xavier): (2017.11.23) Some testing needs to be
+		// done before implementing this, because it appears to not be working.
 
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -396,14 +346,10 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) mouseExited: (NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 
-		InputInfo inputInfo = {};
-		inputInfo.type = InputType::MouseExit;
-		input( windowInfo, inputInfo );
+		// TODO(Xavier): (2017.11.23) Some testing needs to be
+		// done before implementing this, because it appears to not be working.
 
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
 }
 
@@ -411,18 +357,14 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) keyDown: (NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];								// NOTE(Xavier): (2017.11.22) These 2 lines + the 'CGLUnlockContext' have 
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);	// been added to allow for opengl calls to be made upon user input.
-		
+	
 		if ([event isARepeat] == NO)
 		{
-			InputInfo inputInfo = {};
-			inputInfo.type = InputType::KeyDown;
-			inputInfo.keyCode = [event keyCode];
-			input( windowInfo, inputInfo );
+			unsigned int key = [event keyCode];
+			inputInfo.activeKeys[ key ] = true;
+			inputInfo.downKeys[ key ] = true;
 		}
 
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]); // ^ Above Note ^
 	[appLock unlock];
 }
 
@@ -430,16 +372,30 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 - (void) keyUp: (NSEvent*)event
 {
 	[appLock lock];
-	[[self openGLContext] makeCurrentContext];
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 
-		InputInfo inputInfo = {};
-		inputInfo.type = InputType::KeyUp;
-		inputInfo.keyCode = [event keyCode];
-		input( windowInfo, inputInfo );
+		unsigned int key = [event keyCode];
+		inputInfo.activeKeys[ key ] = false;
+		inputInfo.upKeys[ key ] = true;
 
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	[appLock unlock];
+}
+
+//////////////////////////////////
+// NOTE(Xavier): (2017.11.23) This is a helper
+// method to clear input:
+- (void) clearInputAfterFrame
+{
+	for ( std::size_t i = 0; i < KEY_COUNT; ++i )
+	{
+		inputInfo.downKeys[i] = false;
+		inputInfo.upKeys[i] = false;
+	}
+
+	for ( std::size_t i = 0; i < MOUSE_BUTTON_COUNT; ++i )
+	{
+		inputInfo.downMouseButtons[i] = false;
+		inputInfo.upMouseButtons[i] = false;
+	}
 }
 
 //////////////////////////////////
@@ -450,7 +406,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 	[[self openGLContext] makeCurrentContext];
 	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 
-		// NOTE(Xavier): (2017.11.15) This is where the render
+		// NOTE(Xavier): (2017.11.15) This is where the render and input
 		// call to multiplatform section is:
 		static std::size_t startTime = mach_absolute_time();
 		std::size_t endTime = mach_absolute_time();
@@ -458,7 +414,10 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 		startTime = mach_absolute_time();
 		float millisecs = (elapsedTime * timingInfo.numer / timingInfo.denom) / 1000000;
 		windowInfo.deltaTime = millisecs;
-		render( windowInfo );
+		
+		input_and_render( windowInfo, &inputInfo );
+
+		[self clearInputAfterFrame];
 
 		CGLFlushDrawable((CGLContextObj)[[self openGLContext] CGLContextObj]);
 
@@ -477,7 +436,9 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 	[[self openGLContext] makeCurrentContext];
 	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 		
-		render( windowInfo );
+		input_and_render( windowInfo, &inputInfo );
+
+		[self clearInputAfterFrame];
 
 		CGLFlushDrawable((CGLContextObj)[[self openGLContext] CGLContextObj]);
 

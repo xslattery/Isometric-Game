@@ -32,7 +32,7 @@ public:
 	static void exit ();
 	static void render_scene ( const WindowInfo& window );
 	static void resize_scene ( const WindowInfo& window );
-	static void input_scene ( const WindowInfo& window, const InputInfo& input );
+	static void input_scene ( const WindowInfo& window, InputInfo* input );
 
 	////////////////////////////////////////////////////////////
 	// Shared Methods:
@@ -44,7 +44,7 @@ public:
 
 	////////////////////////////////////////////////////////////
 	// Logic Thread Methods:
-	static void update_scene ();
+	static void simulate_scene ();
 
 };
 

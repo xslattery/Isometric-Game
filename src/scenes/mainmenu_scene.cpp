@@ -86,9 +86,9 @@ void MainMenu_Scene::resize ( const WindowInfo& window )
 	projection = orthographic_projection( window.height, 0, 0, window.width, 0.1f, 100.0f );
 }
 
-void MainMenu_Scene::input( const WindowInfo& window, const InputInfo& input )
+void MainMenu_Scene::input( const WindowInfo& window, InputInfo* input )
 {
-	if ( input.type == InputType::KeyDown && input.keyCode == 0 )
+	if ( get_key_down( input, Key::Key_SPACE ) )
 	{
 		Scene_Manager::change_scene( SceneType::Game, window );
 	}
@@ -96,7 +96,7 @@ void MainMenu_Scene::input( const WindowInfo& window, const InputInfo& input )
 
 //////////////////////////////////////
 // Logic Thread - Methods & Data:
-void MainMenu_Scene::update()
+void MainMenu_Scene::simulate()
 {
 	// This will never be called ( idealy ).
 }

@@ -1,9 +1,11 @@
 #ifndef _MATH_HPP_
 #define _MATH_HPP_
 
-#define ZERO_INITIALISE 1
+#define ZERO_INITIALISE_VECTORS 1
 
+#ifndef SSE_SUPPORT
 #define SSE_SUPPORT 1
+#endif
 // NOTE(Xavier): (2017.11.21) SSE support needs to be tested, 
 // because the 16-byte alignment has not been taken into consideration.
 // MAYBE: create a seperate data type like 'sse_vec4'.
@@ -36,7 +38,7 @@ struct vec2
 	// OR should it be uninitialised?
 	vec2 ()
 	{
-	#if ZERO_INITIALISE
+	#if ZERO_INITIALISE_VECTORS
 		this->x = 0;
 		this->y = 0;
 	#endif
@@ -202,7 +204,7 @@ struct vec3
 	// OR should it be uninitialised?
 	vec3 ()
 	{
-	#if ZERO_INITIALISE
+	#if ZERO_INITIALISE_VECTORS
 		this->x = 0;
 		this->y = 0;
 		this->z = 0;
@@ -390,7 +392,7 @@ struct vec4
 	// OR should it be uninitialised?
 	vec4 () 
 	{
-	#if ZERO_INITIALISE
+	#if ZERO_INITIALISE_VECTORS
 	#if SSE_SUPPORT
 		this->sse = _mm_setzero_ps();
 	#else
@@ -696,7 +698,7 @@ struct mat4
 		};
 	};
 
-	mat4 () // NOTE(Xavier): (2017.11.19) Should this be the identity matrix or not?
+	mat4 ()
 	{
 		_vec[0] = { 1,0,0,0 };
 		_vec[1] = { 0,1,0,0 };
