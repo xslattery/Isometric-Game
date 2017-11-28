@@ -568,11 +568,16 @@ int main( int argc, const char *argv[] )
 						styleMask:windowStyle 
 						backing:NSBackingStoreBuffered 
 						defer:NO]; 
-	[window autorelease]; 
+	[window autorelease];
  
 	// Window controller:
 	NSWindowController *windowController = [[NSWindowController alloc] initWithWindow:window]; 
 	[windowController autorelease]; 
+
+	// Hide title bar texture & set color:
+	[window setBackgroundColor:[NSColor colorWithRed:0.2148 green:0.2148 blue:0.2539 alpha:1]];
+	window.titlebarAppearsTransparent = true;
+	window.titleVisibility = NSWindowTitleHidden;
 
 	// Create app delegate to handle system events:
 	View* view = [[[View alloc] initWithFrame:windowRect] autorelease];
