@@ -16,6 +16,9 @@ As this project uses Apples API's it is macos / osx dependent. The libraries / f
  - Quartz framework
  - OpenGL framework
 
+ - **Other Libraries:**
+ - Freetype
+
 All the above libraries / frameworks can be found on all modern macos / osx installs. It is recomended that you have Xcode installed for this project.
 
 #### Windows:
@@ -26,13 +29,18 @@ This project uses built-in windows libraries:
 - gdi32.lib
 - user32.lib
 
-- *These may not be needed:*
+- *These may not be needed but are included:*
 - kernel32.lib
 - shell32.lib
 
+- **Other Libraries:**
+- Freetype
+- NOTE: Freetype also requires 'msvcrt.lib' and 'msvcmrt.lib'
+- GLEW
+
 ## Build Process:
 This project includes a **bash build script** (for OSX) or a **bat build script** (for Win32) that when run will build the project.
-The Compiler user by the bash build script is *Clang*. The compiler used by the bat build script is *MSVC*. *NOTE:* For Win32 Visual Studio is required as *vcvarsall.bat* needs to be run for MSVC to work.
+The Compiler user by the bash build script is *Clang*. The compiler used by the bat build script is *MSVC*. *NOTE:* For Win32 Visual Studio is required as *vcvarsall.bat* with a x64 target needs to be run for MSVC to work.
 
 - **./build_osx.sh**, will generate an OSX exectuable using *Clang*.
 - **build_win32.bat**, will generate an Windows exectuable using *MSVC*.
