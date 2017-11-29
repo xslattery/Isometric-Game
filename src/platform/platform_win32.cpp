@@ -3,6 +3,7 @@
 #include <windowsx.h> // NOTE(Xavier): (2017.11.28) This may nto be needed.
 #include <gl\GL.h> // NOTE(Xavier): (2017.11.28) This should be updated to opengl 3.3+
 
+// http://dantefalcone.name/tutorials/1a-windows-win32-window-and-3d-context-creation/
 
 void Init()
 {
