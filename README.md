@@ -16,7 +16,7 @@ As this project uses Apples API's it is macos / osx dependent. The libraries / f
  - Quartz framework
  - OpenGL framework
 
- - **Other Libraries:**
+**Other Libraries:**
  - Freetype
 
 All the above libraries / frameworks can be found on all modern macos / osx installs. It is recomended that you have Xcode installed for this project.
@@ -29,11 +29,11 @@ This project uses built-in windows libraries:
 - gdi32.lib
 - user32.lib
 
-- *These may not be needed but are included:*
+*These may not be needed but are included:*
 - kernel32.lib
 - shell32.lib
 
-- **Other Libraries:**
+**Other Libraries:**
 - Freetype
 - NOTE: Freetype also requires 'msvcrt.lib' and 'msvcmrt.lib'
 - GLEW
