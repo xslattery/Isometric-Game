@@ -4,6 +4,7 @@
 #ifdef PLATFORM_OSX
 	#include <OpenGL/gl3.h>
 #endif
+
 #ifdef PLATFORM_WIN32
 	#define GLEW_STATIC
 	#include <glew/glew.h>

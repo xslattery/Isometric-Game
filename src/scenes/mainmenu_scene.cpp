@@ -67,18 +67,13 @@ void MainMenu_Scene::init( const WindowInfo& window )
 
 void MainMenu_Scene::render( const WindowInfo& window )
 {
-	// NOTE(Xavier): (2017.11.19) This was done to fix the OpenGL error 1286 when
-	// the window is resizing.
-	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE )
-	{
-		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); GLCALL;
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); GLCALL;
 
-		glUseProgram( shader ); GLCALL;
-		
-		set_uniform_mat4( shader, "projection", &projection );
-		set_uniform_mat4( shader, "view", &camera );
-		render_text_mesh( textMesh, shader );
-	}
+	glUseProgram( shader ); GLCALL;
+	
+	set_uniform_mat4( shader, "projection", &projection );
+	set_uniform_mat4( shader, "view", &camera );
+	render_text_mesh( textMesh, shader );
 }
 
 void MainMenu_Scene::resize ( const WindowInfo& window )

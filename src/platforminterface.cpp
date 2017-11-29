@@ -56,7 +56,13 @@ void init ( const WindowInfo& window )
 void input_and_render ( const WindowInfo& window, InputInfo *input )
 {
 	Scene_Manager::input_scene( window, input );
-	Scene_Manager::render_scene( window );
+	
+	// NOTE(Xavier): (2017.11.29) This was done to fix the OpenGL error 1286 when
+	// the window is resizing.
+	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE )
+	{
+		Scene_Manager::render_scene( window );
+	}
 }
 
 void resize ( const WindowInfo& window )

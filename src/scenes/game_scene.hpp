@@ -5,6 +5,7 @@
 #include "../math.hpp"
 
 #include "scene.hpp"
+#include "region.hpp"
 
 class Game_Scene : public Scene
 {
@@ -16,6 +17,8 @@ private:
 	unsigned int shader;
 	mat4 projection;
 	mat4 camera;
+
+	Region region;
 
 public:
 	//////////////////////////

@@ -63,22 +63,26 @@ void Game_Scene::init( const WindowInfo& window )
 	textMesh.fontsize = 32;
 
 	create_text_mesh( "Game Scene", textMesh, packedGlyphTexture, shader );
+
+
+	region.init( 32, 32, 32 );
+	region.generate();
+	// TODO(Xavier): (2017.11.29)
+	// This needs to be setup so the user can 
+	// specify the save file to load from.
+	// region.load();
 }
 
 void Game_Scene::render ( const WindowInfo& window )
 {
-	// NOTE(Xavier): (2017.11.19) This was done to fix the OpenGL error 1286 when
-	// the window is resizing.
-	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE )
-	{
-		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); GLCALL;
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); GLCALL;
 
-		glUseProgram( shader ); GLCALL;
-		
-		set_uniform_mat4( shader, "projection", &projection );
-		set_uniform_mat4( shader, "view", &camera );
-		render_text_mesh( textMesh, shader );
-	}
+	region.render();
+
+	glUseProgram( shader ); GLCALL;
+	set_uniform_mat4( shader, "projection", &projection );
+	set_uniform_mat4( shader, "view", &camera );
+	render_text_mesh( textMesh, shader );
 }
 
 void Game_Scene::resize ( const WindowInfo& window )
@@ -99,6 +103,8 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 void Game_Scene::simulate ()
 {
 	std::cout << "Game Scene\n";
+
+	region.simulate();
 }
 
 //////////////////////////////////////
@@ -106,4 +112,6 @@ void Game_Scene::simulate ()
 Game_Scene::~Game_Scene ()
 {
 	delete_shader( shader );
+
+	region.cleanup();
 }
