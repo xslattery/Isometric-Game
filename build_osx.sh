@@ -12,6 +12,6 @@ LIBS="-framework Cocoa -framework Quartz -framework OpenGL -l freetype "
 INCLUDE_PATH="-I libs/include"
 LIB_PATH="-L libs"
 
-DEF="-DDEBUG=1 -DSSE_SUPPORT=1"
+DEF="-DPLATFORM_OSX -DDEBUG=1 -DSSE_SUPPORT=1"
 
 clang++ -g -O0 -std=c++14 -arch x86_64 $LIBS $LIB_PATH $INCLUDE_PATH $DEF $OBJC_FILES $CPP_FILES $OUTPUT

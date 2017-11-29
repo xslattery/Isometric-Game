@@ -1,4 +1,4 @@
-#include "opengl.hpp"
+#include "platform/opengl.hpp"
 
 #include "shader.hpp"
 

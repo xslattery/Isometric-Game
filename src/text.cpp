@@ -1,4 +1,4 @@
-#include "opengl.hpp"
+#include "platform/opengl.hpp"
 #include <ft2build.h>
 #include FT_FREETYPE_H
 

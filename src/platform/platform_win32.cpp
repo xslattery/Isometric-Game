@@ -1,27 +1,32 @@
 #define WIN32_LEAN_AND_MEAN // Exclude rarely-used items from the windows headers
 #include <Windows.h>
-#include <windowsx.h> // NOTE(Xavier): (2017.11.28) This may nto be needed.
-#include <gl\GL.h> // NOTE(Xavier): (2017.11.28) This should be updated to opengl 3.3+
+#include <windowsx.h>
+#include "opengl.hpp"
 
-// http://dantefalcone.name/tutorials/1a-windows-win32-window-and-3d-context-creation/
+#include "platform.h"
 
-void Init()
+static WindowInfo windowInfo;
+static InputInfo inputInfo;
+static bool running;
+
+void init_win32 ( HWND windowHandle )
 {
-	glEnable( GL_DEPTH_TEST );
-	glShadeModel( GL_SMOOTH );
-	glClearColor( 0.0f, 1.0f, 1.0f, 1.0f );
+	RECT rect;
+	GetClientRect( windowHandle, &rect );
+	windowInfo.width = rect.right;
+	windowInfo.height = rect.bottom;
+	windowInfo.hidpi_width = rect.right;
+	windowInfo.hidpi_height = rect.bottom;
+	windowInfo.deltaTime = 0;
+	init( windowInfo );
 }
-
-void Paint()
-{
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-}
-
 
 LRESULT CALLBACK WndProc ( HWND, UINT, WPARAM, LPARAM );
 
 int APIENTRY WinMain ( HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow )
 {
+	printf( "Hello World\n");
+
 	// Main window class name:
 	LPCTSTR szWindowClass = "GLTitle";
 
@@ -40,27 +45,35 @@ int APIENTRY WinMain ( HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow )
 	RegisterClass( &windowClass );
 
 	// Title bar text:
-	LPCTSTR szTitle = "GL";
+	LPCTSTR szTitle = "Win32 OpenGL Window";
 
-	HWND windowHandle = CreateWindow( szWindowClass, szTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL );
+	HWND windowHandle = CreateWindow( szWindowClass, szTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 640, 400, NULL, NULL, hInstance, NULL );
 	if ( !windowHandle ) return false;
 
 	ShowWindow( windowHandle, nCmdShow );
 	UpdateWindow( windowHandle );
 
-	// Message loop:
-	MSG message = { };
-	while ( GetMessage(&message, NULL, 0, 0) )
+	// Main Loop:
+	running = true;
+	while ( running )
 	{
-		TranslateMessage( &message );
-		DispatchMessage( &message );
+		// Message loop:
+		MSG message = { };
+		while ( PeekMessage(&message, 0, 0, 0, PM_REMOVE) )
+		{
+			TranslateMessage( &message );
+			DispatchMessage( &message );
+		}
+
+		input_and_render ( windowInfo, &inputInfo );
 	}
 
-	return static_cast<int>(message.wParam);
+	return 0;
 }
 
 HGLRC SetupGLContext ( HWND windowHandle, HDC deviceContextHandle )
 {
+	
 	PIXELFORMATDESCRIPTOR desiredPixelFormat =
 	{
 		sizeof(PIXELFORMATDESCRIPTOR),								// Size
@@ -81,24 +94,32 @@ HGLRC SetupGLContext ( HWND windowHandle, HDC deviceContextHandle )
 
 	int pixelFormat = ChoosePixelFormat( deviceContextHandle, &desiredPixelFormat );
 	SetPixelFormat( deviceContextHandle, pixelFormat, &desiredPixelFormat );
+	
+	HGLRC tempOpenglContext = wglCreateContext( deviceContextHandle );
+	wglMakeCurrent( deviceContextHandle, tempOpenglContext );
 
-	// TODO(Xavier): (2017.11.28)
-	// Set the OpenGL context to 3.3+
+	// TODO(Xavier): (2017.11.29)
+	// Error detection needs to be setup
+	// for example glewInit() may fail int addition to
+	// some other setup function calls.
+	glewInit();
+
+	int attributes[] = 
+	{
+	    WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+	    WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+	    WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+	    0
+	};
 	
-	HGLRC openglContext = wglCreateContext( deviceContextHandle );
+	HGLRC openglContext = wglCreateContextAttribsARB( deviceContextHandle, NULL, attributes );
+	wglMakeCurrent( NULL, NULL );
+	wglDeleteContext( tempOpenglContext );
 	wglMakeCurrent( deviceContextHandle, openglContext );
-	
-	// NOTE(Xavier): (2017.11.28)
-	// This may not be necessary:
-	SetWindowTextA( windowHandle, static_cast<char *>(glGetString(GL_VERSION)) );
-	
-	Init();
-	
-	// NOTE(Xavier): (2017.11.28)
-	// This may not be necessary:
-	SelectObject( deviceContextHandle, GetStockObject(SYSTEM_FONT) );
-	wglUseFontBitmaps( deviceContextHandle, 0, 255, 1000 );
-	
+
+	// Set VSync On(1) / Off(0):
+	wglSwapIntervalEXT( 1 );
+
 	wglMakeCurrent( NULL, NULL );
 	
 	return openglContext;
@@ -154,9 +175,14 @@ LRESULT CALLBACK WndProc ( HWND windowHandle, UINT message, WPARAM wParam, LPARA
 		case WM_CREATE:
 			deviceContextHandle = GetDC( windowHandle );
 			openglContext = SetupGLContext( windowHandle, deviceContextHandle );
+			wglMakeCurrent( deviceContextHandle, openglContext );
+			init_win32( windowHandle );
+			wglMakeCurrent( NULL, NULL );
 			break;
 		
-		case WM_DESTROY:
+		case WM_QUIT: case WM_DESTROY:
+			running = false;
+			cleanup( windowInfo );
 			wglDeleteContext( openglContext );
 			ReleaseDC( windowHandle, deviceContextHandle );
 			PostQuitMessage( 0 );
@@ -164,7 +190,7 @@ LRESULT CALLBACK WndProc ( HWND windowHandle, UINT message, WPARAM wParam, LPARA
 		
 		case WM_PAINT:
 			wglMakeCurrent( deviceContextHandle, openglContext );
-			Paint();
+			input_and_render ( windowInfo, &inputInfo );
 			SwapBuffers( deviceContextHandle );
 			wglMakeCurrent( NULL, NULL );
 			ValidateRect( windowHandle, NULL );
@@ -172,7 +198,13 @@ LRESULT CALLBACK WndProc ( HWND windowHandle, UINT message, WPARAM wParam, LPARA
 
 		case WM_SIZE:
 			wglMakeCurrent( deviceContextHandle, openglContext );
-			glViewport( 0, 0, LOWORD(lParam), HIWORD(lParam) );
+			RECT rect;
+			GetClientRect( windowHandle, &rect );
+			windowInfo.width = rect.right;
+			windowInfo.height = rect.bottom;
+			windowInfo.hidpi_width = rect.right;
+			windowInfo.hidpi_height = rect.bottom;
+			resize ( windowInfo );
 			wglMakeCurrent( NULL, NULL );
 			break;
 

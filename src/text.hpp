@@ -1,7 +1,7 @@
 #ifndef _TEXT_HPP_
 #define _TEXT_HPP_
 
-#include "opengl.hpp"
+#include "platform/opengl.hpp"
 #include <ft2build.h>
 #include FT_FREETYPE_H
 

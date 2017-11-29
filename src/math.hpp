@@ -3,8 +3,10 @@
 
 #define ZERO_INITIALISE_VECTORS 1
 
+#ifdef PLATFORM_OSX
 #ifndef SSE_SUPPORT
 #define SSE_SUPPORT 1
+#endif
 #endif
 // NOTE(Xavier): (2017.11.21) SSE support needs to be tested, 
 // because the 16-byte alignment has not been taken into consideration.

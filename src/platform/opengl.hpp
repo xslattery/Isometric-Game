@@ -1,11 +1,20 @@
-#ifndef _GL_DEBUG_HPP_
-#define _GL_DEBUG_HPP_
+#ifndef _GL_HPP_
+#define _GL_HPP_
 
-#include <OpenGL/gl3.h>
+#ifdef PLATFORM_OSX
+	#include <OpenGL/gl3.h>
+#endif
+#ifdef PLATFORM_WIN32
+	#define GLEW_STATIC
+	#include <glew/glew.h>
+	#include <glew/wglew.h>
+	#include <GL/gl.h>
+#endif
+
 #include <iostream>
 
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
 
 #if DEBUG

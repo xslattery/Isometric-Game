@@ -1,4 +1,4 @@
-#include "opengl.hpp"
+#include "platform/opengl.hpp"
 #include <thread>
 #include <chrono>
 
