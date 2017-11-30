@@ -39,6 +39,9 @@ void Scene_Manager::init( const WindowInfo& window )
 
 void Scene_Manager::exit()
 {
+	disable_updating();
+	while ( is_updating() ); // Wait until the scene is no longer being updated.
+	
 	// Cleanup and release all data:
 	if ( activeScene != nullptr ) delete activeScene;
 	activeScene = nullptr;

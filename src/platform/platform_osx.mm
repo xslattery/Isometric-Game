@@ -496,14 +496,17 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 
 		[appLock lock];
 
+			// NOTE(Xavier): (2017.12.1)
+			// For some reason this has to be above the cleanup() call
+			// because if it is not program will get hung up waiting on a lock.
+			CVDisplayLinkStop(displayLink);
+			CVDisplayLinkRelease(displayLink);
+		
 			// NOTE(Xavier): (2017.11.15): This function is called
 			// to cleanup the program upon closing.
 			// It is implemented in the multiplatform section of the application.
 			cleanup( windowInfo );
-
-			CVDisplayLinkStop(displayLink);
-			CVDisplayLinkRelease(displayLink);
-
+		
 		[appLock unlock];
 	}
 }

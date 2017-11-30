@@ -4,15 +4,23 @@
 #include <atomic>
 #include <vector>
 #include "../math.hpp"
+#include "../platform/opengl.hpp"
 
 struct Chunk_Textured_Mesh
 {
-	// TODO(Xavier): (2017.11.29)
-	// This needs to be implemented.
-	// It should also be moved to its own file.
-	unsigned int vao;
-	unsigned int vbo;
-	unsigned int ibo;
+	// TODO(Xavier): (2017.11.30)
+	// This should be moved to its own file.
+	unsigned int vao = 0;
+	unsigned int vbo = 0;
+	unsigned int ibo = 0;
+	unsigned int numIndices = 0;
+
+	~Chunk_Textured_Mesh()
+	{
+		if ( vao != 0 ) { glDeleteVertexArrays( 1, &vao ); GLCALL; }
+		if ( vbo != 0 ) { glDeleteBuffers( 1, &vbo ); GLCALL; }
+		if ( ibo != 0 ) { glDeleteBuffers( 1, &ibo ); GLCALL; }
+	}
 };
 
 enum class Floor
@@ -83,12 +91,26 @@ struct Region
 	// SHARED DATA & METHODS
 	struct Chunk_Mesh_Data
 	{
-		std::size_t ageIdentifier;
+		Chunk_Mesh_Data( vec3 p )
+		: position(p), ageIdentifier_floor(0), ageIdentifier_wall(0), ageIdentifier_water(0), ageIdentifier_object(0) {}
+		
 		vec3 position;
-		std::vector<float> floorData;
-		std::vector<float> wallData;
-		std::vector<float> waterData;
-		std::vector<float> objectData;
+
+		std::vector<float> floorVertData;
+		std::vector<unsigned int> floorIndexData;
+		std::size_t ageIdentifier_floor;
+		
+		std::vector<float> wallVertData;
+		std::vector<unsigned int> wallIndexData;
+		std::size_t ageIdentifier_wall;
+		
+		std::vector<float> waterVertData;
+		std::vector<unsigned int> waterIndexData;
+		std::size_t ageIdentifier_water;
+
+		std::vector<float> objectVertData;
+		std::vector<unsigned int> objectIndexData;
+		std::size_t ageIdentifier_object;
 	};
 	std::atomic<bool> simulationUsingUploadQue_1;
 	std::atomic<bool> renderingUsingUploadQue_1;
@@ -126,6 +148,14 @@ struct Region
 	unsigned int length;
 	unsigned int width;
 	unsigned int height;
+	
+	// NOTE(Xavier): (2017.11.30)
+	// IF the chunk diemensions do not divide evenly into the regions dimensions
+	// then the chunks will extend outside the region boundries. However the extended
+	// section of the chunk will be empty.
+	float chunk_length;
+	float chunk_width;
+	float chunk_height;
 
 	// NOTE(Xavier): (2017.11.29)
 	// These methods are a special case as they will be 
@@ -143,6 +173,8 @@ struct Region
 	// RENDERING DATA & METHODS
 	struct Chunk_Mesh
 	{
+		Chunk_Mesh( vec3 p )
+		: position(p), ageIdentifier_floor(0), ageIdentifier_wall(0), ageIdentifier_water(0), ageIdentifier_object(0) {}
 		vec3 position;
 		Chunk_Textured_Mesh floor;
 		std::size_t ageIdentifier_floor;
@@ -156,6 +188,8 @@ struct Region
 	std::vector<Chunk_Mesh> chunkMeshes;
 
 	unsigned int shader;
+	mat4 projection;
+	mat4 camera;
 
 	void render();
 	void issue_command();

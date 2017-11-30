@@ -79,6 +79,8 @@ void Game_Scene::render ( const WindowInfo& window )
 
 	region.render();
 
+	glClear( GL_DEPTH_BUFFER_BIT ); GLCALL;
+
 	glUseProgram( shader ); GLCALL;
 	set_uniform_mat4( shader, "projection", &projection );
 	set_uniform_mat4( shader, "view", &camera );
@@ -102,8 +104,6 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 // Logic Thread - Methods & Data:
 void Game_Scene::simulate ()
 {
-	std::cout << "Game Scene\n";
-
 	region.simulate();
 }
 

@@ -7,3 +7,5 @@ void Globals::init ()
 }
 
 FT_Library Globals::freeType;
+unsigned int Globals::window_width;
+unsigned int Globals::window_height;

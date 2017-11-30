@@ -1,15 +1,22 @@
+#include <iostream>
 
 #include "region.hpp"
+#include "../globals.hpp"
 #include "../shader.hpp"
 
 /////////////////////////
 // SIMULATION THREAD:
 void Region::simulate()
 {
-	// build_floor_mesh();
-	build_wall_mesh();
-	// build_water_mesh();
-	// build_object_mesh();
+	// TEMP(Xavier): (2017.11.30)
+	// This is here only to test the simulation passing data
+	// to the render thread.
+	for ( unsigned int i = 0; i < ceil(height/chunk_height); ++i )
+		for ( unsigned int j = 0; j < ceil(width/chunk_width); ++j )
+			for ( unsigned int k = 0; k < ceil(length/chunk_length); ++k )
+				meshesNeedingUpdate_floor.push_back( vec3(i,j,k) );
+	
+	build_floor_mesh();
 }
 
 // TODO(Xavier): (2017.11.29)
@@ -20,36 +27,233 @@ unsigned char Region::get_water ( int x, int y, int z ) { return 0; }
 Object Region::get_object ( int x, int y, int z ) { return Object::NONE; }
 Direction Region::get_direction ( int x, int y, int z ) { return Direction::NONE; }
 
+static std::size_t buildAgeIdentifier_floor = 0;
 void Region::build_floor_mesh()
 {
-	for ( auto p : meshesNeedingUpdate_floor )
+	if ( meshesNeedingUpdate_floor.size() > 0 )
 	{
+		for ( auto p : meshesNeedingUpdate_floor )
+		{
+			// TODO(Xavier): (2017.11.30) Build floor mesh ...
+			// TEMP(Xavier): (2017.11.30)
+			// This is here only to test the simulation passing data
+			// to the render thread.
+			float offsetX = rand()%300;
+			float offsetY = rand()%300;
+			std::vector<float> verts = 
+			{
+				100+offsetX, 100+offsetY, 0,
+				100+offsetX, 200+offsetY, 0,
+				200+offsetX, 100+offsetY, 0,
+			};
+			std::vector<unsigned int> indices = 
+			{
+				0, 1, 2,
+			};
+
+			// Pass to shared mesh data ...
+			if ( renderingUsingUploadQue_2 == false )
+			{
+				simulationUsingUploadQue_2 = true;
+				if ( renderingUsingUploadQue_2 == false )
+				{
+					chunkMeshesToBeUploaded_2.emplace_back( p );
+					auto& cm = chunkMeshesToBeUploaded_2.back();
+					buildAgeIdentifier_floor++;
+					cm.ageIdentifier_floor = buildAgeIdentifier_floor;
+					cm.floorVertData = std::move( verts );
+					cm.floorIndexData = std::move( indices );
+					simulationUsingUploadQue_2 = false;
+				} else { simulationUsingUploadQue_2 = false; }
+			}
+			else if ( renderingUsingUploadQue_1 == false )
+			{
+				simulationUsingUploadQue_1 = true;
+				if ( renderingUsingUploadQue_1 == false )
+				{
+					chunkMeshesToBeUploaded_1.emplace_back( p );
+					auto& cm = chunkMeshesToBeUploaded_1.back();
+					buildAgeIdentifier_floor++;
+					cm.ageIdentifier_floor = buildAgeIdentifier_floor;
+					cm.floorVertData = std::move( verts );
+					cm.floorIndexData = std::move( indices );
+					simulationUsingUploadQue_1 = false;
+				} else { simulationUsingUploadQue_1 = false; }
+			}
+		}
+		meshesNeedingUpdate_floor.clear();
 	}
-	meshesNeedingUpdate_floor.clear();
 }
 
+static std::size_t buildAgeIdentifier_wall = 0;
 void Region::build_wall_mesh()
 {
-	for ( auto p : meshesNeedingUpdate_wall )
+	if ( meshesNeedingUpdate_wall.size() > 0 )
 	{
+		for ( auto p : meshesNeedingUpdate_wall )
+		{
+			// TODO(Xavier): (2017.11.30) Build wall mesh ...
+			// TEMP(Xavier): (2017.11.30)
+			// This is here only to test the simulation passing data
+			// to the render thread.
+			float offset = rand()%300;
+			std::vector<float> verts = 
+			{
+				100+offset, 100, 0,
+				100+offset, 200, 0,
+				200+offset, 100, 0,
+			};
+			std::vector<unsigned int> indices = 
+			{
+				0, 1, 2,
+			};
+
+			// Pass to shared mesh data ...
+			if ( renderingUsingUploadQue_2 == false )
+			{
+				simulationUsingUploadQue_2 = true;
+				if ( renderingUsingUploadQue_2 == false )
+				{
+					chunkMeshesToBeUploaded_2.emplace_back( p );
+					auto& cm = chunkMeshesToBeUploaded_2.back();
+					buildAgeIdentifier_wall++;
+					cm.ageIdentifier_wall = buildAgeIdentifier_wall;
+					cm.wallVertData = std::move( verts );
+					cm.wallIndexData = std::move( indices );
+					simulationUsingUploadQue_2 = false;
+				} else { simulationUsingUploadQue_2 = false; }
+			}
+			else if ( renderingUsingUploadQue_1 == false )
+			{
+				simulationUsingUploadQue_1 = true;
+				if ( renderingUsingUploadQue_1 == false )
+				{
+					chunkMeshesToBeUploaded_1.emplace_back( p );
+					auto& cm = chunkMeshesToBeUploaded_1.back();
+					buildAgeIdentifier_wall++;
+					cm.ageIdentifier_wall = buildAgeIdentifier_wall;
+					cm.wallVertData = std::move( verts );
+					cm.wallIndexData = std::move( indices );
+					simulationUsingUploadQue_1 = false;
+				} else { simulationUsingUploadQue_1 = false; }
+			}
+		}
+		meshesNeedingUpdate_wall.clear();
 	}
-	meshesNeedingUpdate_wall.clear();
 }
 
+static std::size_t buildAgeIdentifier_water = 0;
 void Region::build_water_mesh()
 {
-	for ( auto p : meshesNeedingUpdate_water )
+	if ( meshesNeedingUpdate_water.size() > 0 )
 	{
+		for ( auto p : meshesNeedingUpdate_water )
+		{
+			// TODO(Xavier): (2017.11.30) Build water mesh ...
+			// TEMP(Xavier): (2017.11.30)
+			// This is here only to test the simulation passing data
+			// to the render thread.
+			float offset = rand()%300;
+			std::vector<float> verts = 
+			{
+				100+offset, 100, 0,
+				100+offset, 200, 0,
+				200+offset, 100, 0,
+			};
+			std::vector<unsigned int> indices = 
+			{
+				0, 1, 2,
+			};
+
+			// Pass to shared mesh data ...
+			if ( renderingUsingUploadQue_2 == false )
+			{
+				simulationUsingUploadQue_2 = true;
+				if ( renderingUsingUploadQue_2 == false )
+				{
+					chunkMeshesToBeUploaded_2.emplace_back( p );
+					auto& cm = chunkMeshesToBeUploaded_2.back();
+					buildAgeIdentifier_water++;
+					cm.ageIdentifier_water = buildAgeIdentifier_water;
+					cm.waterVertData = std::move( verts );
+					cm.waterIndexData = std::move( indices );
+					simulationUsingUploadQue_2 = false;
+				} else { simulationUsingUploadQue_2 = false; }
+			}
+			else if ( renderingUsingUploadQue_1 == false )
+			{
+				simulationUsingUploadQue_1 = true;
+				if ( renderingUsingUploadQue_1 == false )
+				{
+					chunkMeshesToBeUploaded_1.emplace_back( p );
+					auto& cm = chunkMeshesToBeUploaded_1.back();
+					buildAgeIdentifier_water++;
+					cm.ageIdentifier_water = buildAgeIdentifier_water;
+					cm.waterVertData = std::move( verts );
+					cm.waterIndexData = std::move( indices );
+					simulationUsingUploadQue_1 = false;
+				} else { simulationUsingUploadQue_1 = false; }
+			}
+		}
+		meshesNeedingUpdate_water.clear();
 	}
-	meshesNeedingUpdate_water.clear();
 }
 
+static std::size_t buildAgeIdentifier_object = 0;
 void Region::build_object_mesh()
 {
-	for ( auto p : meshesNeedingUpdate_object )
+	if ( meshesNeedingUpdate_object.size() > 0 )
 	{
+		for ( auto p : meshesNeedingUpdate_object )
+		{
+			// TODO(Xavier): (2017.11.30) Build object mesh ...
+			// TEMP(Xavier): (2017.11.30)
+			// This is here only to test the simulation passing data
+			// to the render thread.
+			float offset = rand()%300;
+			std::vector<float> verts = 
+			{
+				100+offset, 100, 0,
+				100+offset, 200, 0,
+				200+offset, 100, 0,
+			};
+			std::vector<unsigned int> indices = 
+			{
+				0, 1, 2,
+			};
+
+			// Pass to shared mesh data ...
+			if ( renderingUsingUploadQue_2 == false )
+			{
+				simulationUsingUploadQue_2 = true;
+				if ( renderingUsingUploadQue_2 == false )
+				{
+					chunkMeshesToBeUploaded_2.emplace_back( p );
+					auto& cm = chunkMeshesToBeUploaded_2.back();
+					buildAgeIdentifier_object++;
+					cm.ageIdentifier_object = buildAgeIdentifier_object;
+					cm.objectVertData = std::move( verts );
+					cm.objectIndexData = std::move( indices );
+					simulationUsingUploadQue_2 = false;
+				} else { simulationUsingUploadQue_2 = false; }
+			}
+			else if ( renderingUsingUploadQue_1 == false )
+			{
+				simulationUsingUploadQue_1 = true;
+				if ( renderingUsingUploadQue_1 == false )
+				{
+					chunkMeshesToBeUploaded_1.emplace_back( p );
+					auto& cm = chunkMeshesToBeUploaded_1.back();
+					buildAgeIdentifier_object++;
+					cm.ageIdentifier_object = buildAgeIdentifier_object;
+					cm.objectVertData = std::move( verts );
+					cm.objectIndexData = std::move( indices );
+					simulationUsingUploadQue_1 = false;
+				} else { simulationUsingUploadQue_1 = false; }
+			}
+		}
+		meshesNeedingUpdate_object.clear();
 	}
-	meshesNeedingUpdate_object.clear();
 }
 
 
@@ -57,9 +261,15 @@ void Region::build_object_mesh()
 // SHARED:
 void Region::init( unsigned int l, unsigned int w, unsigned int h )
 {
-	length = l;
-	width = w;
-	height = h;
+	// TEMP(Xavier): (2017.11.30)
+	// This is here only to test the simulation passing data
+	// to the render thread.
+	length = 128;
+	width = 128;
+	height = 128;
+	chunk_length = 16;
+	chunk_width = 16;
+	chunk_height = 16;
 
 	simulationUsingUploadQue_1 = false;
 	renderingUsingUploadQue_1 = false;
@@ -77,9 +287,35 @@ void Region::init( unsigned int l, unsigned int w, unsigned int h )
 	selection.type = Selection_Type::NONE;
 	selection.info.position = vec3(-1); // Set to unused value.
 	
-	shader = 0;
-	// TODO(Xavier): (2017.11.29) Load the shader.
-	// shader = LoadShader( /* Shader source */);
+	shader = load_shader(
+		R"(
+			#version 330 core
+
+			layout(location = 0) in vec3 position;
+
+			uniform mat4 model;
+			uniform mat4 view;
+			uniform mat4 projection;
+
+			void main ()
+			{
+			    gl_Position = projection * view * model * vec4(position, 1.0);
+			}
+		)",
+		R"(
+			#version 330 core
+
+			layout(location = 0) out vec4 Color;
+
+			void main ()
+			{
+			    Color = vec4( 1, 0, 0, 1 );
+			}
+		)"
+	);
+
+	projection = orthographic_projection( Globals::window_height, 0, 0, Globals::window_width, 0.1f, 100.0f );
+	camera = translate( camera, -vec3(0, 0, 10) );
 }
 
 void Region::generate()
@@ -105,13 +341,20 @@ void Region::generate()
 		}
 	}
 
-	// meshesNeedingUpdate_floor.push_back( vec3(0) );
-	meshesNeedingUpdate_wall.push_back( vec3(0) );
-	// meshesNeedingUpdate_water.push_back( vec3(0) );
-	// meshesNeedingUpdate_object.push_back( vec3(0) );
+	for ( unsigned int i = 0; i < ceil(height/chunk_height); ++i )
+	{
+		for ( unsigned int j = 0; j < ceil(width/chunk_width); ++j )
+		{
+			for ( unsigned int k = 0; k < ceil(length/chunk_length); ++k )
+			{
+				chunkMeshes.emplace_back( vec3(i,j,k) );
+				meshesNeedingUpdate_floor.push_back( vec3(i,j,k) );
+			}	
+		}
+	}
 
-	// build_floor_mesh();
-	build_wall_mesh();
+	build_floor_mesh();
+	// build_wall_mesh();
 	// build_water_mesh();
 	// build_object_mesh();
 }
@@ -153,10 +396,10 @@ void Region::render()
 			{
 				for ( auto& m : chunkMeshesToBeUploaded_1 )
 				{
-					if ( m.floorData.size() > 0 ) upload_floor_mesh( m );
-					if ( m.wallData.size() > 0 ) upload_wall_mesh( m );
-					if ( m.waterData.size() > 0 ) upload_water_mesh( m );
-					if ( m.objectData.size() > 0 ) upload_object_mesh( m );
+					if ( m.floorVertData.size() > 0 ) upload_floor_mesh( m );
+					if ( m.wallVertData.size() > 0 ) upload_wall_mesh( m );
+					if ( m.waterVertData.size() > 0 ) upload_water_mesh( m );
+					if ( m.objectVertData.size() > 0 ) upload_object_mesh( m );
 				}
 				chunkMeshesToBeUploaded_1.clear();
 			}
@@ -173,15 +416,54 @@ void Region::render()
 			{
 				for ( auto& m : chunkMeshesToBeUploaded_2 )
 				{
-					if ( m.floorData.size() > 0 ) upload_floor_mesh( m );
-					if ( m.wallData.size() > 0 ) upload_wall_mesh( m );
-					if ( m.waterData.size() > 0 ) upload_water_mesh( m );
-					if ( m.objectData.size() > 0 ) upload_object_mesh( m );
+					if ( m.floorVertData.size() > 0 ) upload_floor_mesh( m );
+					if ( m.wallVertData.size() > 0 ) upload_wall_mesh( m );
+					if ( m.waterVertData.size() > 0 ) upload_water_mesh( m );
+					if ( m.objectVertData.size() > 0 ) upload_object_mesh( m );
 				}
 				chunkMeshesToBeUploaded_2.clear();
 			}
 			renderingUsingUploadQue_2 = false;
 		} else { renderingUsingUploadQue_2 = false; }
+	}
+
+	// Draw all the chunks to the screen.
+	glUseProgram( shader ); GLCALL;
+	set_uniform_mat4( shader, "projection", &projection );
+	set_uniform_mat4( shader, "view", &camera );
+	for ( auto& cm : chunkMeshes )
+	{
+		if ( cm.floor.vao != 0 )
+		{
+			auto mtx = translate(mat4(1), vec3(0));
+			set_uniform_mat4( shader, "model", &mtx );
+			glBindVertexArray( cm.floor.vao ); GLCALL;
+			glDrawElements( GL_TRIANGLES, cm.floor.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
+		}
+
+		if ( cm.wall.vao != 0 )
+		{
+			auto mtx = translate(mat4(1), vec3(0));
+			set_uniform_mat4( shader, "model", &mtx );
+			glBindVertexArray( cm.wall.vao ); GLCALL;
+			glDrawElements( GL_TRIANGLES, cm.wall.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
+		}
+
+		if ( cm.water.vao != 0 )
+		{
+			auto mtx = translate(mat4(1), vec3(0));
+			set_uniform_mat4( shader, "model", &mtx );
+			glBindVertexArray( cm.water.vao ); GLCALL;
+			glDrawElements( GL_TRIANGLES, cm.water.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
+		}
+		
+		if ( cm.object.vao != 0 )
+		{
+			auto mtx = translate(mat4(1), vec3(0));
+			set_uniform_mat4( shader, "model", &mtx );
+			glBindVertexArray( cm.object.vao ); GLCALL;
+			glDrawElements( GL_TRIANGLES, cm.object.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
+		}
 	}
 }
 
@@ -203,32 +485,116 @@ void Region::cancel_selection()
 
 void Region::upload_floor_mesh( Chunk_Mesh_Data& meshData )
 {
-	// 1. Find the correct chunk mesh to update based on the position of the meshData
-	// 2. Check the age of the data againt the current age.
-	// 3. using opengl calls upload the meshData to the graphics card.
-	// 4. store the vao, vbo & ibo to the chunkMesh.
+	int cl =  ceil(length/chunk_length);
+	int cw =  ceil(width/chunk_width);
+	auto index = static_cast<unsigned int>(meshData.position.x + meshData.position.y*cl + meshData.position.z*cl*cw);
+	auto& cm = chunkMeshes[ index ];
+	cm.position = meshData.position;
+
+	if ( cm.floor.vao == 0 ) { glGenVertexArrays( 1, &cm.floor.vao ); GLCALL; }
+	if ( cm.floor.vbo == 0 ) { glGenBuffers( 1, &cm.floor.vbo ); GLCALL; }
+	if ( cm.floor.ibo == 0 ) { glGenBuffers( 1, &cm.floor.ibo ); GLCALL; }
+
+	glBindVertexArray( cm.floor.vao ); GLCALL;
+	
+		glBindBuffer( GL_ARRAY_BUFFER, cm.floor.vbo ); GLCALL;
+			glBufferData( GL_ARRAY_BUFFER, meshData.floorVertData.size() * sizeof( float ), meshData.floorVertData.data(), GL_DYNAMIC_DRAW ); GLCALL;
+		
+			GLint posAttrib = glGetAttribLocation( shader, "position" ); GLCALL;
+			glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 ); GLCALL;
+			glEnableVertexAttribArray( posAttrib ); GLCALL;
+
+		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.floor.ibo ); GLCALL;
+			glBufferData( GL_ELEMENT_ARRAY_BUFFER, meshData.floorIndexData.size() * sizeof(unsigned int), meshData.floorIndexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
+	
+	cm.floor.numIndices = meshData.floorIndexData.size();
+
+	glBindVertexArray( 0 ); GLCALL;
 }
 
 void Region::upload_wall_mesh( Chunk_Mesh_Data& meshData )
 {
-	// 1. Find the correct chunk mesh to update based on the position of the meshData
-	// 2. Check the age of the data againt the current age.
-	// 3. using opengl calls upload the meshData to the graphics card.
-	// 4. store the vao, vbo & ibo to the chunkMesh.
+	int cl =  ceil(length/chunk_length);
+	int cw =  ceil(width/chunk_width);
+	auto index = static_cast<unsigned int>(meshData.position.x + meshData.position.y*cl + meshData.position.z*cl*cw);
+	auto& cm = chunkMeshes[ index ];
+	cm.position = meshData.position;
+
+	if ( cm.wall.vao == 0 ) { glGenVertexArrays( 1, &cm.wall.vao ); GLCALL; }
+	if ( cm.wall.vbo == 0 ){  glGenBuffers( 1, &cm.wall.vbo ); GLCALL; }
+	if ( cm.wall.ibo == 0 ){  glGenBuffers( 1, &cm.wall.ibo ); GLCALL; }
+
+	glBindVertexArray( cm.wall.vao ); GLCALL;
+	
+		glBindBuffer( GL_ARRAY_BUFFER, cm.wall.vbo ); GLCALL;
+			glBufferData( GL_ARRAY_BUFFER, meshData.wallVertData.size() * sizeof( float ), meshData.wallVertData.data(), GL_DYNAMIC_DRAW ); GLCALL;
+		
+			GLint posAttrib = glGetAttribLocation( shader, "position" ); GLCALL;
+			glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 ); GLCALL;
+			glEnableVertexAttribArray( posAttrib ); GLCALL;
+
+		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.wall.ibo ); GLCALL;
+			glBufferData( GL_ELEMENT_ARRAY_BUFFER, meshData.wallIndexData.size() * sizeof(unsigned int), meshData.wallIndexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
+	
+	cm.wall.numIndices = meshData.wallIndexData.size();
+
+	glBindVertexArray( 0 ); GLCALL;
 }
 
 void Region::upload_water_mesh( Chunk_Mesh_Data& meshData )
 {
-	// 1. Find the correct chunk mesh to update based on the position of the meshData
-	// 2. Check the age of the data againt the current age.
-	// 3. using opengl calls upload the meshData to the graphics card.
-	// 4. store the vao, vbo & ibo to the chunkMesh.
+	int cl =  ceil(length/chunk_length);
+	int cw =  ceil(width/chunk_width);
+	auto index = static_cast<unsigned int>(meshData.position.x + meshData.position.y*cl + meshData.position.z*cl*cw);
+	auto& cm = chunkMeshes[ index ];
+	cm.position = meshData.position;
+
+	if ( cm.water.vao == 0 ) { glGenVertexArrays( 1, &cm.water.vao ); GLCALL; }
+	if ( cm.water.vbo == 0 ) { glGenBuffers( 1, &cm.water.vbo ); GLCALL; }
+	if ( cm.water.ibo == 0 ) { glGenBuffers( 1, &cm.water.ibo ); GLCALL; }
+
+	glBindVertexArray( cm.water.vao ); GLCALL;
+	
+		glBindBuffer( GL_ARRAY_BUFFER, cm.water.vbo ); GLCALL;
+			glBufferData( GL_ARRAY_BUFFER, meshData.waterVertData.size() * sizeof( float ), meshData.waterVertData.data(), GL_DYNAMIC_DRAW ); GLCALL;
+		
+			GLint posAttrib = glGetAttribLocation( shader, "position" ); GLCALL;
+			glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 ); GLCALL;
+			glEnableVertexAttribArray( posAttrib ); GLCALL;
+
+		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.water.ibo ); GLCALL;
+			glBufferData( GL_ELEMENT_ARRAY_BUFFER, meshData.waterIndexData.size() * sizeof(unsigned int), meshData.waterIndexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
+	
+	cm.water.numIndices = meshData.waterIndexData.size();
+
+	glBindVertexArray( 0 ); GLCALL;
 }
 
 void Region::upload_object_mesh( Chunk_Mesh_Data& meshData )
 {
-	// 1. Find the correct chunk mesh to update based on the position of the meshData
-	// 2. Check the age of the data againt the current age.
-	// 3. using opengl calls upload the meshData to the graphics card.
-	// 4. store the vao, vbo & ibo to the chunkMesh.
+	int cl =  ceil(length/chunk_length);
+	int cw =  ceil(width/chunk_width);
+	auto index = static_cast<unsigned int>(meshData.position.x + meshData.position.y*cl + meshData.position.z*cl*cw);
+	auto& cm = chunkMeshes[ index ];
+	cm.position = meshData.position;
+
+	if ( cm.object.vao == 0 ) { glGenVertexArrays( 1, &cm.object.vao ); GLCALL; }
+	if ( cm.object.vbo == 0 ) { glGenBuffers( 1, &cm.object.vbo ); GLCALL; }
+	if ( cm.object.ibo == 0 ) { glGenBuffers( 1, &cm.object.ibo ); GLCALL; }
+
+	glBindVertexArray( cm.object.vao ); GLCALL;
+	
+		glBindBuffer( GL_ARRAY_BUFFER, cm.object.vbo ); GLCALL;
+			glBufferData( GL_ARRAY_BUFFER, meshData.objectVertData.size() * sizeof( float ), meshData.objectVertData.data(), GL_DYNAMIC_DRAW ); GLCALL;
+		
+			GLint posAttrib = glGetAttribLocation( shader, "position" ); GLCALL;
+			glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 ); GLCALL;
+			glEnableVertexAttribArray( posAttrib ); GLCALL;
+
+		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.object.ibo ); GLCALL;
+			glBufferData( GL_ELEMENT_ARRAY_BUFFER, meshData.objectIndexData.size() * sizeof(unsigned int), meshData.objectIndexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
+	
+	cm.object.numIndices = meshData.objectIndexData.size();
+
+	glBindVertexArray( 0 ); GLCALL;
 }

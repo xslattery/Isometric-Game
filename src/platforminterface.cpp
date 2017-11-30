@@ -16,7 +16,7 @@ static void simulation_thread_entry ()
 	while ( !terminateSimulationThread )
 	{
 		Scene_Manager::simulate_scene();
-		std::this_thread::sleep_for( std::chrono::milliseconds(1000) );
+		std::this_thread::sleep_for( std::chrono::milliseconds(10) );
 	}
 	
 	#if DEBUG
@@ -46,6 +46,9 @@ void init ( const WindowInfo& window )
     glClearColor( 0.5f, 0.6f, 0.7f, 1.0f ); GLCALL;
 
     Globals::init();
+    Globals::window_width = window.width;
+    Globals::window_height = window.height;
+    
 	Scene_Manager::init( window );
 
 	// Begin the simulation thread:
@@ -73,6 +76,6 @@ void resize ( const WindowInfo& window )
 
 void cleanup ( const WindowInfo& window )
 {
-	Scene_Manager::exit();
 	terminateSimulationThread = true;
+	Scene_Manager::exit();
 }
