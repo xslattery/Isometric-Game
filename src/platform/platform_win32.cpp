@@ -9,6 +9,9 @@ static WindowInfo windowInfo;
 static InputInfo inputInfo;
 static bool running;
 
+static HGLRC openglContext;
+static HDC deviceContextHandle;
+
 void init_win32 ( HWND windowHandle )
 {
 	RECT rect;
@@ -53,6 +56,9 @@ int APIENTRY WinMain ( HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow )
 	ShowWindow( windowHandle, nCmdShow );
 	UpdateWindow( windowHandle );
 
+	deviceContextHandle = GetDC( windowHandle );
+
+	
 	// Main Loop:
 	running = true;
 	while ( running )
@@ -61,17 +67,26 @@ int APIENTRY WinMain ( HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow )
 		MSG message = { };
 		while ( PeekMessage(&message, 0, 0, 0, PM_REMOVE) )
 		{
+			if ( message.message == WM_QUIT || message.message == WM_CLOSE )
+			{
+				running = false;
+				// MessageBox( NULL, "Hi", "There", MB_OK );
+			}
 			TranslateMessage( &message );
 			DispatchMessage( &message );
 		}
 
+		wglMakeCurrent( deviceContextHandle, openglContext );
 		input_and_render ( windowInfo, &inputInfo );
+		SwapBuffers( deviceContextHandle );
+		wglMakeCurrent( NULL, NULL );
 	}
+
 
 	return 0;
 }
 
-HGLRC SetupGLContext ( HWND windowHandle, HDC deviceContextHandle )
+HGLRC SetupGLContext ( HWND windowHandle, HDC localDeviceContextHandle )
 {
 	
 	PIXELFORMATDESCRIPTOR desiredPixelFormat =
@@ -92,11 +107,11 @@ HGLRC SetupGLContext ( HWND windowHandle, HDC deviceContextHandle )
 		0, 0, 0														// Layer, Visible & Damage masks
 	};
 
-	int pixelFormat = ChoosePixelFormat( deviceContextHandle, &desiredPixelFormat );
-	SetPixelFormat( deviceContextHandle, pixelFormat, &desiredPixelFormat );
+	int pixelFormat = ChoosePixelFormat( localDeviceContextHandle, &desiredPixelFormat );
+	SetPixelFormat( localDeviceContextHandle, pixelFormat, &desiredPixelFormat );
 	
-	HGLRC tempOpenglContext = wglCreateContext( deviceContextHandle );
-	wglMakeCurrent( deviceContextHandle, tempOpenglContext );
+	HGLRC tempOpenglContext = wglCreateContext( localDeviceContextHandle );
+	wglMakeCurrent( localDeviceContextHandle, tempOpenglContext );
 
 	// TODO(Xavier): (2017.11.29)
 	// Error detection needs to be setup
@@ -112,17 +127,17 @@ HGLRC SetupGLContext ( HWND windowHandle, HDC deviceContextHandle )
 	    0
 	};
 	
-	HGLRC openglContext = wglCreateContextAttribsARB( deviceContextHandle, NULL, attributes );
+	HGLRC localOpenglContext = wglCreateContextAttribsARB( localDeviceContextHandle, NULL, attributes );
 	wglMakeCurrent( NULL, NULL );
 	wglDeleteContext( tempOpenglContext );
-	wglMakeCurrent( deviceContextHandle, openglContext );
+	wglMakeCurrent( localDeviceContextHandle, localOpenglContext );
 
 	// Set VSync On(1) / Off(0):
 	wglSwapIntervalEXT( 1 );
 
 	wglMakeCurrent( NULL, NULL );
 	
-	return openglContext;
+	return localOpenglContext;
 }
 
 void OnLButtonDown ( HWND windowHandle, bool bDoubleClicked, int xPos, int yPos, UINT keyFlags )
@@ -167,9 +182,6 @@ void OnChar ( HWND windowHandle, TCHAR character, int )
 
 LRESULT CALLBACK WndProc ( HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam )
 {
-	static HGLRC openglContext;
-	static HDC deviceContextHandle;
-
 	switch ( message )
 	{
 		case WM_CREATE:
