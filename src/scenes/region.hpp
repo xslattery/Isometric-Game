@@ -5,6 +5,7 @@
 #include <vector>
 #include "../math.hpp"
 #include "../platform/opengl.hpp"
+#include "../platform/platform.h"
 
 struct Chunk_Textured_Mesh
 {
@@ -55,6 +56,14 @@ enum class Selection_Type
 	ENTITY,
 };
 
+enum class Command_Type
+{
+	NONE,
+	GENERATE_REGION_DATA,
+	// LOAD_REGION_DATA,
+	// SAVE_REGION_DATA,
+};
+
 struct Region
 {
 	///////////////////////////////
@@ -73,7 +82,10 @@ struct Region
 	std::vector<vec3> meshesNeedingUpdate_water;
 	std::vector<vec3> meshesNeedingUpdate_object;
 
-	void simulate();
+	void simulate ();
+	void generate ();
+	void load ();
+	void save ();
 
 		Floor get_floor ( int x, int y, int z );
 		Wall get_wall ( int x, int y, int z );
@@ -81,17 +93,21 @@ struct Region
 		Object get_object ( int x, int y, int z );
 		Direction get_direction ( int x, int y, int z );
 
-		void build_floor_mesh();
-		void build_wall_mesh();
-		void build_water_mesh();
-		void build_object_mesh();
+		void build_floor_mesh ();
+		void build_wall_mesh ();
+		void build_water_mesh ();
+		void build_object_mesh ();
+
 
 
 	///////////////////////////
 	// SHARED DATA & METHODS
+	std::atomic<bool> regionDataGenerated;
+	std::atomic<bool> simulationPaused;
+
 	struct Chunk_Mesh_Data
 	{
-		Chunk_Mesh_Data( vec3 p )
+		Chunk_Mesh_Data ( vec3 p )
 		: position(p), ageIdentifier_floor(0), ageIdentifier_wall(0), ageIdentifier_water(0), ageIdentifier_object(0) {}
 		
 		vec3 position;
@@ -123,7 +139,7 @@ struct Region
 	{
 		// TODO(Xavier): (2017.11.29)
 		// This needs more details.
-		unsigned int type;
+		Command_Type type;
 	};
 	std::atomic<bool> simulationUsingCommandQue_1;
 	std::atomic<bool> renderingUsingCommandQue_1;
@@ -162,18 +178,15 @@ struct Region
 	// called from the main thread but access data for the simulation thread.
 	// Init will probably have to stay like this, but generate, load & save could
 	// probably be moved to the simulation thread and be called from an issued command.
-	void init( unsigned int l, unsigned int w, unsigned int h );
-	void generate();
-	void load();
-	void save();
-	void cleanup();
+	void init ( const WindowInfo& window, unsigned int l, unsigned int w, unsigned int h );
+	void cleanup ();
 
 
 	//////////////////////////////
 	// RENDERING DATA & METHODS
 	struct Chunk_Mesh
 	{
-		Chunk_Mesh( vec3 p )
+		Chunk_Mesh ( vec3 p )
 		: position(p), ageIdentifier_floor(0), ageIdentifier_wall(0), ageIdentifier_water(0), ageIdentifier_object(0) {}
 		vec3 position;
 		Chunk_Textured_Mesh floor;
@@ -191,18 +204,21 @@ struct Region
 	mat4 projection;
 	mat4 camera;
 
-	void render();
-	void issue_command();
+	void render ();
+	void issue_command ( Command_Type command );
+	void pause_simulation( bool state );
 	
 		// These methods will build their own selection meshes.
-		void select_position( int x, int y, int z );
-		void select_area( int x, int y, int z );
-		void cancel_selection();
+		void select_position ( int x, int y, int z );
+		void select_area ( int x, int y, int z );
+		void cancel_selection ();
 		
-		void upload_floor_mesh( Chunk_Mesh_Data& meshData );
-		void upload_wall_mesh( Chunk_Mesh_Data& meshData );
-		void upload_water_mesh( Chunk_Mesh_Data& meshData );
-		void upload_object_mesh( Chunk_Mesh_Data& meshData );
+		void upload_floor_mesh ( Chunk_Mesh_Data& meshData );
+		void upload_wall_mesh ( Chunk_Mesh_Data& meshData );
+		void upload_water_mesh ( Chunk_Mesh_Data& meshData );
+		void upload_object_mesh ( Chunk_Mesh_Data& meshData );
+
+	void resize( const WindowInfo& window );
 };
 
 #endif

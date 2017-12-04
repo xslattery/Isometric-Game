@@ -64,13 +64,8 @@ void Game_Scene::init( const WindowInfo& window )
 
 	create_text_mesh( "Game Scene", textMesh, packedGlyphTexture, shader );
 
-
-	region.init( 32, 32, 32 );
-	region.generate();
-	// TODO(Xavier): (2017.11.29)
-	// This needs to be setup so the user can 
-	// specify the save file to load from.
-	// region.load();
+	region.init( window, 32, 32, 32 );
+	region.issue_command( Command_Type::GENERATE_REGION_DATA );
 }
 
 void Game_Scene::render ( const WindowInfo& window )
@@ -90,6 +85,8 @@ void Game_Scene::render ( const WindowInfo& window )
 void Game_Scene::resize ( const WindowInfo& window )
 {
 	projection = orthographic_projection( window.height, 0, 0, window.width, 0.1f, 100.0f );
+
+	region.resize( window );
 }
 
 void Game_Scene::input ( const WindowInfo& window, InputInfo* input )

@@ -46,8 +46,6 @@ void init ( const WindowInfo& window )
     glClearColor( 0.5f, 0.6f, 0.7f, 1.0f ); GLCALL;
 
     Globals::init();
-    Globals::window_width = window.width;
-    Globals::window_height = window.height;
     
 	Scene_Manager::init( window );
 

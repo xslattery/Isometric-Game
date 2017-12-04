@@ -117,6 +117,7 @@ void Scene_Manager::simulate_scene()
 		if ( activeScene != nullptr ) { activeScene->simulate(); }
 		else
 		{
+			// NOTE(Xavier): (2017.12.4)
 			// Because there is no acive scene this medhod
 			// does not need to do anything.
 		}
