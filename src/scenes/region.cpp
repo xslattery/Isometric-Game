@@ -3,6 +3,34 @@
 #include "region.hpp"
 #include "../shader.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+static void load_texture ( unsigned int* texID, const char* name )
+{
+	int texWidth, texHeight, n;
+	unsigned char* bitmap = stbi_load( name, &texWidth, &texHeight, &n, 4 );
+
+	if ( bitmap )
+	{
+		if ( *texID == 0 ) { glGenTextures( 1, texID ); GLCALL; }
+
+		glBindTexture( GL_TEXTURE_2D, *texID ); GLCALL;
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, bitmap ); GLCALL;
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); GLCALL;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); GLCALL;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); GLCALL;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); GLCALL;
+
+		stbi_image_free( bitmap );
+	}
+	else
+	{
+		*texID = 0;
+	}
+}
+
 /////////////////////////
 // SIMULATION THREAD:
 void Region::simulate()
@@ -62,12 +90,15 @@ void Region::simulate()
 			// TEMP(Xavier): (2017.11.30)
 			// This is here only to test the simulation passing data
 			// to the render thread.
-			for ( unsigned int i = 0; i < ceil(height/chunk_height); ++i )
-				for ( unsigned int j = 0; j < ceil(width/chunk_width); ++j )
-					for ( unsigned int k = 0; k < ceil(length/chunk_length); ++k )
-						meshesNeedingUpdate_floor.push_back( vec3(i,j,k) );
+			// for ( unsigned int i = 0; i < ceil(height/chunk_height); ++i )
+			// 	for ( unsigned int j = 0; j < ceil(width/chunk_width); ++j )
+			// 		for ( unsigned int k = 0; k < ceil(length/chunk_length); ++k )
+			// 			meshesNeedingUpdate_floor.push_back( vec3(i,j,k) );
 			
-			build_floor_mesh();
+			// build_floor_mesh();
+			build_wall_mesh();
+			// build_water_mesh();
+			// build_object_mesh();
 		}
 	}
 }
@@ -172,21 +203,51 @@ void Region::build_wall_mesh ()
 	{
 		for ( auto p : meshesNeedingUpdate_wall )
 		{
-			// TODO(Xavier): (2017.11.30) Build wall mesh ...
-			// TEMP(Xavier): (2017.11.30)
-			// This is here only to test the simulation passing data
-			// to the render thread.
-			float offset = rand()%300;
-			std::vector<float> verts = 
+			std::vector<float> verts;
+			std::vector<unsigned int> indices;
+			float ox = p.x;
+			float oy = p.y;
+			float oz = p.z;
+			vec2 xDir { -1, 18.0f/27.0f };
+			vec2 yDir {  1, 18.0f/27.0f };
+
+			vec2 tl { 0, 			1.0f-1.0f/512*68 };
+			vec2 tr { 1.0f/512*54, 	1.0f-1.0f/512*68 };
+			vec2 bl { 0, 			1.0f };
+			vec2 br { 1.0f/512*54, 	1.0f };
+
+			for ( float zz = 0; zz < chunk_height; ++zz )
 			{
-				100+offset, 100, 0,
-				100+offset, 200, 0,
-				200+offset, 100, 0,
-			};
-			std::vector<unsigned int> indices = 
-			{
-				0, 1, 2,
-			};
+				for ( float yy = 0; yy < chunk_width; ++yy )
+				{
+					for ( float xx = 0; xx < chunk_length; ++xx )
+					{
+						if ( get_wall( ox+xx, oy+yy, oz+zz ) != Wall::NONE )
+						{
+							unsigned int idxP = verts.size()/5;
+							unsigned int tempIndices [6] =
+							{
+								idxP+0, idxP+1, idxP+2,
+								idxP+2, idxP+1, idxP+3
+							};
+							indices.insert( indices.end(), tempIndices, tempIndices+6 );
+
+							vec2 pos = ( (xx+ox*chunk_length)*xDir + (yy+oy*chunk_width)*yDir ) * 27;
+							pos += vec2{ 0, 32 } * (zz+oz*chunk_height);
+							float zPos = -(xx+ox + yy+oy) + (zz+oz)*2;
+
+							float tempVerts [20] =
+							{
+								-27.0f+pos.x, 68.0f+pos.y, zPos,		tl.x, tl.y,
+								-27.0f+pos.x,  0.0f+pos.y, zPos,		bl.x, bl.y,
+								 27.0f+pos.x, 68.0f+pos.y, zPos,		tr.x, tr.y,
+								 27.0f+pos.x,  0.0f+pos.y, zPos,		br.x, br.y,
+							};
+							verts.insert( verts.end(), tempVerts, tempVerts+20 );
+						}
+					}
+				}
+			}
 
 			// Pass to shared mesh data ...
 			if ( renderingUsingUploadQue_2 == false )
@@ -350,14 +411,30 @@ void Region::generate ()
 		{
 			for ( unsigned int k = 0; k < length; ++k )
 			{
-				tiles.floor[ i*width*length + j*length + k ] = Floor::NONE;
-				tiles.wall[ i*width*length + j*length + k ] = Wall::NONE;
+				tiles.floor[ i*width*length + j*length + k ] = Floor::STONE;
+				tiles.wall[ i*width*length + j*length + k ] = Wall::STONE;
 				tiles.water[ i*width*length + j*length + k ] = 0;
 				tiles.object[ i*width*length + j*length + k ] = Object::NONE;
 				tiles.direction[ i*width*length + j*length + k ] = Direction::NONE;
 			}	
 		}
 	}
+
+	for ( unsigned int i = 0; i < ceil(height/chunk_height); ++i )
+	{
+		for ( unsigned int j = 0; j < ceil(width/chunk_width); ++j )
+		{
+			for ( unsigned int k = 0; k < ceil(length/chunk_length); ++k )
+			{
+				// meshesNeedingUpdate_floor.push_back( vec3(i,j,k) );
+				meshesNeedingUpdate_wall.push_back( vec3(i,j,k) );
+				// meshesNeedingUpdate_water.push_back( vec3(i,j,k) );
+				// meshesNeedingUpdate_object.push_back( vec3(i,j,k) );
+			}
+		}
+	}
+
+	// meshesNeedingUpdate_wall.push_back( vec3(0,0,0) );
 
 	regionDataGenerated = true;
 }
@@ -375,9 +452,9 @@ void Region::init ( const WindowInfo& window, unsigned int l, unsigned int w, un
 	// TEMP(Xavier): (2017.11.30)
 	// This is here only to test the simulation passing data
 	// to the render thread.
-	length = 128;
-	width = 128;
-	height = 128;
+	length = l;
+	width = w;
+	height = h;
 	chunk_length = 16;
 	chunk_width = 16;
 	chunk_height = 16;
@@ -405,14 +482,18 @@ void Region::init ( const WindowInfo& window, unsigned int l, unsigned int w, un
 			#version 330 core
 
 			layout(location = 0) in vec3 position;
+			layout(location = 1) in vec2 textcoord;
 
 			uniform mat4 model;
 			uniform mat4 view;
 			uniform mat4 projection;
 
+			out vec2 passTexCoord;
+
 			void main ()
 			{
 			    gl_Position = projection * view * model * vec4(position, 1.0);
+			    passTexCoord = textcoord;
 			}
 		)",
 		R"(
@@ -420,15 +501,23 @@ void Region::init ( const WindowInfo& window, unsigned int l, unsigned int w, un
 
 			layout(location = 0) out vec4 Color;
 
+			uniform sampler2D ourTexture;
+
+			in vec2 passTexCoord;
+
 			void main ()
 			{
-			    Color = vec4( 1, 0, 0, 1 );
+				if ( texture(ourTexture, passTexCoord).w == 0 ) discard;
+			    Color = texture(ourTexture, passTexCoord);
 			}
 		)"
 	);
 
-	projection = orthographic_projection( window.height, 0, 0, window.width, 0.1f, 100.0f );
-	camera = translate( camera, -vec3(0, 0, 10) );
+	chunkMeshTexture = 0;
+	load_texture( &chunkMeshTexture, "res/TileMap.png" );
+
+	projection = orthographic_projection( -window.height/0.2, window.height/0.2, -window.width/0.2, window.width/0.2, 0.1f, 5000.0f );
+	camera = translate( mat4(1), -vec3(0, 200, 500) );
 
 	for ( unsigned int i = 0; i < ceil(height/chunk_height); ++i )
 	{
@@ -437,7 +526,6 @@ void Region::init ( const WindowInfo& window, unsigned int l, unsigned int w, un
 			for ( unsigned int k = 0; k < ceil(length/chunk_length); ++k )
 			{
 				chunkMeshes.emplace_back( vec3(i,j,k) );
-				meshesNeedingUpdate_floor.push_back( vec3(i,j,k) );
 			}	
 		}
 	}
@@ -517,6 +605,7 @@ void Region::render ()
 			auto mtx = translate(mat4(1), vec3(0));
 			set_uniform_mat4( shader, "model", &mtx );
 			glBindVertexArray( cm.floor.vao ); GLCALL;
+			glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
 			glDrawElements( GL_TRIANGLES, cm.floor.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
 		}
 
@@ -525,6 +614,7 @@ void Region::render ()
 			auto mtx = translate(mat4(1), vec3(0));
 			set_uniform_mat4( shader, "model", &mtx );
 			glBindVertexArray( cm.wall.vao ); GLCALL;
+			glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
 			glDrawElements( GL_TRIANGLES, cm.wall.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
 		}
 
@@ -533,6 +623,7 @@ void Region::render ()
 			auto mtx = translate(mat4(1), vec3(0));
 			set_uniform_mat4( shader, "model", &mtx );
 			glBindVertexArray( cm.water.vao ); GLCALL;
+			glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
 			glDrawElements( GL_TRIANGLES, cm.water.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
 		}
 		
@@ -541,6 +632,7 @@ void Region::render ()
 			auto mtx = translate(mat4(1), vec3(0));
 			set_uniform_mat4( shader, "model", &mtx );
 			glBindVertexArray( cm.object.vao ); GLCALL;
+			glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
 			glDrawElements( GL_TRIANGLES, cm.object.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
 		}
 	}
@@ -641,8 +733,12 @@ void Region::upload_wall_mesh ( Chunk_Mesh_Data& meshData )
 				glBufferData( GL_ARRAY_BUFFER, meshData.wallVertData.size() * sizeof( float ), meshData.wallVertData.data(), GL_DYNAMIC_DRAW ); GLCALL;
 			
 				GLint posAttrib = glGetAttribLocation( shader, "position" ); GLCALL;
-				glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 ); GLCALL;
+				glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0 ); GLCALL;
 				glEnableVertexAttribArray( posAttrib ); GLCALL;
+
+				GLint texAttrib = glGetAttribLocation( shader, "textcoord" ); GLCALL;
+				glVertexAttribPointer( texAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12 ); GLCALL;
+				glEnableVertexAttribArray( texAttrib ); GLCALL;
 
 			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.wall.ibo ); GLCALL;
 				glBufferData( GL_ELEMENT_ARRAY_BUFFER, meshData.wallIndexData.size() * sizeof(unsigned int), meshData.wallIndexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
@@ -723,6 +819,6 @@ void Region::upload_object_mesh ( Chunk_Mesh_Data& meshData )
 
 void Region::resize( const WindowInfo& window )
 {
-	projection = orthographic_projection( window.height, 0, 0, window.width, 0.1f, 100.0f );
-	camera = translate( camera, -vec3(0, 0, 10) );
+	projection = orthographic_projection( -window.height/0.2, window.height/0.2, -window.width/0.2, window.width/0.2, 0.1f, 5000.0f );
+	camera = translate( mat4(1), -vec3(0, 200, 500) );
 }

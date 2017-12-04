@@ -27,11 +27,13 @@ struct Chunk_Textured_Mesh
 enum class Floor
 {
 	NONE = 0,
+	STONE = 1,
 };
 
 enum class Wall
 {
 	NONE = 0,
+	STONE = 1,
 };
 
 enum class Object
@@ -201,6 +203,7 @@ struct Region
 	std::vector<Chunk_Mesh> chunkMeshes;
 
 	unsigned int shader;
+	unsigned int chunkMeshTexture;
 	mat4 projection;
 	mat4 camera;
 

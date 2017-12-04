@@ -70,6 +70,8 @@ void Game_Scene::init( const WindowInfo& window )
 
 void Game_Scene::render ( const WindowInfo& window )
 {
+	create_text_mesh( ("DT:"+std::to_string(window.deltaTime)).c_str(), textMesh, packedGlyphTexture, shader );
+
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); GLCALL;
 
 	region.render();
@@ -92,9 +94,10 @@ void Game_Scene::resize ( const WindowInfo& window )
 void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 {
 	if ( get_key_down( input, Key::Key_SPACE ) )
-	{
 		Scene_Manager::change_scene( SceneType::MainMenu, window );
-	}
+
+	if ( get_key_down( input, Key::Key_P ) )
+		region.simulationPaused = !region.simulationPaused;
 }
 
 //////////////////////////////////////
