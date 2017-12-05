@@ -3,6 +3,7 @@
 ## About:
 This project is currently a work in process. It is a 2D Isometric game, where you control a simulated 3D tile-based world.
 
+<img src="other/IsometricGame_ReadmeImage.png" alt="Isometric Game Image" height="300px" style="height: 300px;"/>
 
 ## Supported Platforms:
 - OSX / MacOS
