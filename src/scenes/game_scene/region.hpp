@@ -22,6 +22,7 @@ struct Chunk_Textured_Mesh
 	unsigned int vbo = 0;
 	unsigned int ibo = 0;
 	unsigned int numIndices = 0;
+	std::vector<unsigned int> indexCount;
 
 	~Chunk_Textured_Mesh()
 	{
@@ -123,10 +124,12 @@ struct Region
 
 		std::vector<float> floorVertData;
 		std::vector<unsigned int> floorIndexData;
+		std::vector<unsigned int> floorIndexCount;
 		std::size_t ageIdentifier_floor;
 		
 		std::vector<float> wallVertData;
 		std::vector<unsigned int> wallIndexData;
+		std::vector<unsigned int> wallIndexCount;
 		std::size_t ageIdentifier_wall;
 		
 		std::vector<float> waterVertData;

@@ -148,6 +148,7 @@ void Region::build_floor_mesh ()
 		{
 			std::vector<float> verts;
 			std::vector<unsigned int> indices;
+			std::vector<unsigned int> indexCount;
 			float ox = p.x * chunk_length;
 			float oy = p.y * chunk_width;
 			float oz = p.z * chunk_height;
@@ -191,6 +192,7 @@ void Region::build_floor_mesh ()
 						}
 					}
 				}
+				indexCount.push_back( indices.size() );
 			}
 
 			// Pass to shared mesh data ...
@@ -205,6 +207,7 @@ void Region::build_floor_mesh ()
 					cm.ageIdentifier_floor = buildAgeIdentifier_floor;
 					cm.floorVertData = std::move( verts );
 					cm.floorIndexData = std::move( indices );
+					cm.floorIndexCount = std::move( indexCount );
 					simulationUsingUploadQue_2 = false;
 				} else { simulationUsingUploadQue_2 = false; }
 			}
@@ -219,6 +222,7 @@ void Region::build_floor_mesh ()
 					cm.ageIdentifier_floor = buildAgeIdentifier_floor;
 					cm.floorVertData = std::move( verts );
 					cm.floorIndexData = std::move( indices );
+					cm.floorIndexCount = std::move( indexCount );
 					simulationUsingUploadQue_1 = false;
 				} else { simulationUsingUploadQue_1 = false; }
 			}
@@ -236,6 +240,7 @@ void Region::build_wall_mesh ()
 		{
 			std::vector<float> verts;
 			std::vector<unsigned int> indices;
+			std::vector<unsigned int> indexCount;
 			float ox = p.x * chunk_length;
 			float oy = p.y * chunk_width;
 			float oz = p.z * chunk_height;
@@ -243,8 +248,6 @@ void Region::build_wall_mesh ()
 			vec2 yDir {  1, 18.0f/27.0f };
 
 			vec2 tl { 0, 			1.0f-1.0f/512*68 };
-			vec2 tr { 1.0f/512*54, 	1.0f-1.0f/512*68 };
-			vec2 bl { 0, 			1.0f };
 			vec2 br { 1.0f/512*54, 	1.0f };
 
 			for ( float zz = 0; zz < chunk_height; ++zz )
@@ -272,8 +275,8 @@ void Region::build_wall_mesh ()
 								float tempVerts [20] =
 								{
 									-27.0f+pos.x, 68.0f+pos.y, zPos,		tl.x, tl.y,
-									-27.0f+pos.x,  0.0f+pos.y, zPos,		bl.x, bl.y,
-									 27.0f+pos.x, 68.0f+pos.y, zPos,		tr.x, tr.y,
+									-27.0f+pos.x,  0.0f+pos.y, zPos,		tl.x, br.y,
+									 27.0f+pos.x, 68.0f+pos.y, zPos,		br.x, tl.y,
 									 27.0f+pos.x,  0.0f+pos.y, zPos,		br.x, br.y,
 								};
 								verts.insert( verts.end(), tempVerts, tempVerts+20 );
@@ -281,6 +284,7 @@ void Region::build_wall_mesh ()
 						}
 					}
 				}
+				indexCount.push_back( indices.size() );
 			}
 
 			// Pass to shared mesh data ...
@@ -295,6 +299,7 @@ void Region::build_wall_mesh ()
 					cm.ageIdentifier_wall = buildAgeIdentifier_wall;
 					cm.wallVertData = std::move( verts );
 					cm.wallIndexData = std::move( indices );
+					cm.wallIndexCount = std::move( indexCount );
 					simulationUsingUploadQue_2 = false;
 				} else { simulationUsingUploadQue_2 = false; }
 			}
@@ -309,6 +314,7 @@ void Region::build_wall_mesh ()
 					cm.ageIdentifier_wall = buildAgeIdentifier_wall;
 					cm.wallVertData = std::move( verts );
 					cm.wallIndexData = std::move( indices );
+					cm.wallIndexCount = std::move( indexCount );
 					simulationUsingUploadQue_1 = false;
 				} else { simulationUsingUploadQue_1 = false; }
 			}
@@ -445,7 +451,7 @@ void Region::generate ()
 		{
 			for ( unsigned int k = 0; k < length; ++k )
 			{
-				int height = static_cast<int>(generate_height_data( k, j+200, 350, 4, 0.5f, 2.5f, 1 ) * 25.0f ) + 64;
+				int height = static_cast<int>(generate_height_data( k, j, 350, 4, 0.5f, 2.5f, 1 ) * 25.0f ) + 64;
 				
 				if ( height > i ) tiles.floor[ i*width*length + j*length + k ] = Floor::STONE;
 				else tiles.floor[ i*width*length + j*length + k ] = Floor::NONE;
@@ -663,6 +669,7 @@ void Region::render ()
 	}
 
 	if ( viewHeight < 0 ) viewHeight = 0;
+	if ( viewHeight > height ) viewHeight = height;
 
 	// Draw all the chunks to the screen.
 	glUseProgram( shader ); GLCALL;
@@ -670,7 +677,9 @@ void Region::render ()
 	set_uniform_mat4( shader, "view", &camera );
 	for ( auto& cm : chunkMeshes )
 	{
-		if ( cm.position.z > viewHeight ) continue;
+		if ( cm.position.z*chunk_height > viewHeight ) continue;
+		unsigned int indexOffset =  viewHeight - cm.position.z*chunk_height;
+		if ( indexOffset > chunk_height-1 ) indexOffset = chunk_height-1;
 
 		if ( cm.floor.vao != 0 && cm.floor.numIndices != 0 )
 		{
@@ -678,7 +687,7 @@ void Region::render ()
 			set_uniform_mat4( shader, "model", &mtx );
 			glBindVertexArray( cm.floor.vao ); GLCALL;
 			glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
-			glDrawElements( GL_TRIANGLES, cm.floor.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
+			glDrawElements( GL_TRIANGLES, cm.floor.indexCount[indexOffset], GL_UNSIGNED_INT, 0 ); GLCALL;
 		}
 
 		if ( cm.wall.vao != 0 && cm.wall.numIndices != 0 )
@@ -687,7 +696,7 @@ void Region::render ()
 			set_uniform_mat4( shader, "model", &mtx );
 			glBindVertexArray( cm.wall.vao ); GLCALL;
 			glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
-			glDrawElements( GL_TRIANGLES, cm.wall.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
+			glDrawElements( GL_TRIANGLES, cm.wall.indexCount[indexOffset], GL_UNSIGNED_INT, 0 ); GLCALL;
 		}
 
 		// if ( cm.water.vao != 0 && cm.water.numIndices != 0 )
@@ -782,6 +791,7 @@ void Region::upload_floor_mesh ( Chunk_Mesh_Data& meshData )
 				glBufferData( GL_ELEMENT_ARRAY_BUFFER, meshData.floorIndexData.size() * sizeof(unsigned int), meshData.floorIndexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
 		
 		cm.floor.numIndices = meshData.floorIndexData.size();
+		cm.floor.indexCount = std::move( meshData.floorIndexCount );
 
 		glBindVertexArray( 0 ); GLCALL;
 	}
@@ -820,6 +830,7 @@ void Region::upload_wall_mesh ( Chunk_Mesh_Data& meshData )
 				glBufferData( GL_ELEMENT_ARRAY_BUFFER, meshData.wallIndexData.size() * sizeof(unsigned int), meshData.wallIndexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
 		
 		cm.wall.numIndices = meshData.wallIndexData.size();
+		cm.wall.indexCount = std::move( meshData.wallIndexCount );
 
 		glBindVertexArray( 0 ); GLCALL;
 	}

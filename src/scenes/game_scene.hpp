@@ -14,6 +14,7 @@ private:
 	// Main Thread Data:
 	Packed_Glyph_Texture packedGlyphTexture;
 	Text_Mesh textMesh = { 0 };
+	Text_Mesh generatingTextMesh = { 0 };
 	unsigned int shader;
 	mat4 projection;
 	mat4 camera;
