@@ -520,7 +520,14 @@ void Region::init ( const WindowInfo& window, unsigned int l, unsigned int w, un
 	height = h;
 	chunk_length = 64;
 	chunk_width = 64;
-	chunk_height = 1;
+	// NOTE(Xavier): (2017.12.5)
+	// An idea for how to allow scrolling through heights
+	// when chunk heights greater than 1 is to the the index count.
+	// the could for each height of the chunk could be stored in an array
+	// and only the ammount needed for that height will be drawn.
+	chunk_height = 16;
+
+	viewHeight = h;
 
 	simulationPaused = false;
 	regionDataGenerated = false;
@@ -655,13 +662,17 @@ void Region::render ()
 		} else { renderingUsingUploadQue_2 = false; }
 	}
 
+	if ( viewHeight < 0 ) viewHeight = 0;
+
 	// Draw all the chunks to the screen.
 	glUseProgram( shader ); GLCALL;
 	set_uniform_mat4( shader, "projection", &projection );
 	set_uniform_mat4( shader, "view", &camera );
 	for ( auto& cm : chunkMeshes )
 	{
-		if ( cm.floor.vao != 0 )
+		if ( cm.position.z > viewHeight ) continue;
+
+		if ( cm.floor.vao != 0 && cm.floor.numIndices != 0 )
 		{
 			auto mtx = translate(mat4(1), vec3(0));
 			set_uniform_mat4( shader, "model", &mtx );
@@ -670,7 +681,7 @@ void Region::render ()
 			glDrawElements( GL_TRIANGLES, cm.floor.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
 		}
 
-		if ( cm.wall.vao != 0 )
+		if ( cm.wall.vao != 0 && cm.wall.numIndices != 0 )
 		{
 			auto mtx = translate(mat4(1), vec3(0));
 			set_uniform_mat4( shader, "model", &mtx );
@@ -679,7 +690,7 @@ void Region::render ()
 			glDrawElements( GL_TRIANGLES, cm.wall.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
 		}
 
-		// if ( cm.water.vao != 0 )
+		// if ( cm.water.vao != 0 && cm.water.numIndices != 0 )
 		// {
 		// 	auto mtx = translate(mat4(1), vec3(0));
 		// 	set_uniform_mat4( shader, "model", &mtx );
@@ -688,7 +699,7 @@ void Region::render ()
 		// 	glDrawElements( GL_TRIANGLES, cm.water.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
 		// }
 		
-		// if ( cm.object.vao != 0 )
+		// if ( cm.object.vao != 0 && cm.object.numIndices != 0 )
 		// {
 		// 	auto mtx = translate(mat4(1), vec3(0));
 		// 	set_uniform_mat4( shader, "model", &mtx );

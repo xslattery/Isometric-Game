@@ -120,6 +120,11 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 		if ( region.projectionScale <= 0 ) region.projectionScale = 0.001f;
 		region.projection = orthographic_projection( -window.height/2*region.projectionScale, window.height/2*region.projectionScale, -window.width/2*region.projectionScale, window.width/2*region.projectionScale, 0.1f, 5000.0f );
 	}
+
+	if ( get_key( input, Key::Key_Q ) )
+		region.viewHeight--;
+	if ( get_key( input, Key::Key_E ) )
+		region.viewHeight++;
 }
 
 //////////////////////////////////////

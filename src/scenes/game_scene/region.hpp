@@ -208,6 +208,8 @@ struct Region
 	mat4 projection;
 	mat4 camera;
 
+	int viewHeight;
+
 	void render ();
 	void issue_command ( Command_Type command );
 	void pause_simulation( bool state );
