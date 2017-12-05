@@ -455,9 +455,9 @@ void Region::init ( const WindowInfo& window, unsigned int l, unsigned int w, un
 	length = l;
 	width = w;
 	height = h;
-	chunk_length = 16;
-	chunk_width = 16;
-	chunk_height = 16;
+	chunk_length = 8;
+	chunk_width = 8;
+	chunk_height = 8;
 
 	simulationPaused = false;
 	regionDataGenerated = false;
@@ -516,8 +516,8 @@ void Region::init ( const WindowInfo& window, unsigned int l, unsigned int w, un
 	chunkMeshTexture = 0;
 	load_texture( &chunkMeshTexture, "res/TileMap.png" );
 
-	projection = orthographic_projection( -window.height/0.2, window.height/0.2, -window.width/0.2, window.width/0.2, 0.1f, 5000.0f );
-	camera = translate( mat4(1), -vec3(0, 200, 500) );
+	projection = orthographic_projection( -window.height/2, window.height/2, -window.width/2, window.width/2, 0.1f, 5000.0f );
+	camera = translate( mat4(1), -vec3(0, 800, 500) );
 
 	for ( unsigned int i = 0; i < ceil(height/chunk_height); ++i )
 	{
@@ -539,7 +539,6 @@ void Region::cleanup ()
 	free( tiles.object );
 	free( tiles.direction );
 }
-
 
 //////////////////////////////
 // RENDERING THREAD:
@@ -600,14 +599,14 @@ void Region::render ()
 	set_uniform_mat4( shader, "view", &camera );
 	for ( auto& cm : chunkMeshes )
 	{
-		if ( cm.floor.vao != 0 )
-		{
-			auto mtx = translate(mat4(1), vec3(0));
-			set_uniform_mat4( shader, "model", &mtx );
-			glBindVertexArray( cm.floor.vao ); GLCALL;
-			glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
-			glDrawElements( GL_TRIANGLES, cm.floor.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
-		}
+		// if ( cm.floor.vao != 0 )
+		// {
+		// 	auto mtx = translate(mat4(1), vec3(0));
+		// 	set_uniform_mat4( shader, "model", &mtx );
+		// 	glBindVertexArray( cm.floor.vao ); GLCALL;
+		// 	glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
+		// 	glDrawElements( GL_TRIANGLES, cm.floor.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
+		// }
 
 		if ( cm.wall.vao != 0 )
 		{
@@ -618,23 +617,23 @@ void Region::render ()
 			glDrawElements( GL_TRIANGLES, cm.wall.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
 		}
 
-		if ( cm.water.vao != 0 )
-		{
-			auto mtx = translate(mat4(1), vec3(0));
-			set_uniform_mat4( shader, "model", &mtx );
-			glBindVertexArray( cm.water.vao ); GLCALL;
-			glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
-			glDrawElements( GL_TRIANGLES, cm.water.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
-		}
+		// if ( cm.water.vao != 0 )
+		// {
+		// 	auto mtx = translate(mat4(1), vec3(0));
+		// 	set_uniform_mat4( shader, "model", &mtx );
+		// 	glBindVertexArray( cm.water.vao ); GLCALL;
+		// 	glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
+		// 	glDrawElements( GL_TRIANGLES, cm.water.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
+		// }
 		
-		if ( cm.object.vao != 0 )
-		{
-			auto mtx = translate(mat4(1), vec3(0));
-			set_uniform_mat4( shader, "model", &mtx );
-			glBindVertexArray( cm.object.vao ); GLCALL;
-			glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
-			glDrawElements( GL_TRIANGLES, cm.object.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
-		}
+		// if ( cm.object.vao != 0 )
+		// {
+		// 	auto mtx = translate(mat4(1), vec3(0));
+		// 	set_uniform_mat4( shader, "model", &mtx );
+		// 	glBindVertexArray( cm.object.vao ); GLCALL;
+		// 	glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
+		// 	glDrawElements( GL_TRIANGLES, cm.object.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
+		// }
 	}
 }
 
@@ -819,6 +818,5 @@ void Region::upload_object_mesh ( Chunk_Mesh_Data& meshData )
 
 void Region::resize( const WindowInfo& window )
 {
-	projection = orthographic_projection( -window.height/0.2, window.height/0.2, -window.width/0.2, window.width/0.2, 0.1f, 5000.0f );
-	camera = translate( mat4(1), -vec3(0, 200, 500) );
+	projection = orthographic_projection( -window.height/2, window.height/2, -window.width/2, window.width/2, 0.1f, 5000.0f );
 }

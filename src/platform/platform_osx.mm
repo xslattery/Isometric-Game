@@ -168,7 +168,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 	[[self openGLContext] makeCurrentContext];
 	
 	// Vsync:
-	GLint swapInt = 0; // On (1) / Off (0)
+	GLint swapInt = 1; // On (1) / Off (0)
 	[[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
 	
 	// Create a display link capable of being used with all active displays:
@@ -180,7 +180,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 	CGLPixelFormatObj cglPixelFormat = (CGLPixelFormatObj)[[self pixelFormat] CGLPixelFormatObj];
 	CVDisplayLinkSetCurrentCGDisplayFromOpenGLContext( displayLink, cglContext, cglPixelFormat );
 
-	GLint sync = 0;
+	GLint sync = 1;
 	CGLSetParameter(cglContext, kCGLCPSwapInterval, &sync);
 	
 	[appLock lock];
@@ -413,7 +413,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 		std::size_t elapsedTime = endTime - startTime;
 		startTime = mach_absolute_time();
 		float millisecs = (elapsedTime * timingInfo.numer / timingInfo.denom) / 1000000;
-		windowInfo.deltaTime = millisecs;
+		windowInfo.deltaTime = 0.001f * millisecs;
 		
 		input_and_render( windowInfo, &inputInfo );
 

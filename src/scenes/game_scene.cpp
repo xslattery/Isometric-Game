@@ -70,7 +70,12 @@ void Game_Scene::init( const WindowInfo& window )
 
 void Game_Scene::render ( const WindowInfo& window )
 {
-	create_text_mesh( ("DT:"+std::to_string(window.deltaTime)).c_str(), textMesh, packedGlyphTexture, shader );
+	create_text_mesh( 
+		(
+			"DT:"+std::to_string(window.deltaTime) +
+			"\nDIM:"+std::to_string((int)window.hidpi_width)+"x"+std::to_string((int)window.hidpi_height)
+		).c_str(), 
+		textMesh, packedGlyphTexture, shader );
 
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); GLCALL;
 
@@ -92,12 +97,30 @@ void Game_Scene::resize ( const WindowInfo& window )
 }
 
 void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
-{
+{	
 	if ( get_key_down( input, Key::Key_SPACE ) )
 		Scene_Manager::change_scene( SceneType::MainMenu, window );
 
 	if ( get_key_down( input, Key::Key_P ) )
 		region.simulationPaused = !region.simulationPaused;
+
+	float speed = 1000;
+	// if ( get_key( input, Key::Key_W ) )
+	// 	region.camera = translate( region.camera, -vec3(0,1,0)*window.deltaTime*speed );
+	// if ( get_key( input, Key::Key_S ) )
+	// 	region.camera = translate( region.camera, -vec3(0,-1,0)*window.deltaTime*speed );
+	// if ( get_key( input, Key::Key_A ) )
+	// 	region.camera = translate( region.camera, -vec3(-1,0,0)*window.deltaTime*speed );
+	// if ( get_key( input, Key::Key_D ) )
+	// 	region.camera = translate( region.camera, -vec3(1,0,0)*window.deltaTime*speed );
+
+	static float dir = 1;
+	static int count = 0;
+	if(dir > 0) count++;
+	if(dir < 0) count--;
+	if(count > 60) { dir = -dir; }
+	if(count < -60) { dir = -dir; }
+	region.camera = translate( region.camera, -vec3(dir,0,0)*window.deltaTime*speed );
 }
 
 //////////////////////////////////////
@@ -115,3 +138,13 @@ Game_Scene::~Game_Scene ()
 
 	region.cleanup();
 }
+
+// #include <mach/mach_time.h>
+// static std::size_t startTime;
+// startTime = mach_absolute_time();
+// std::size_t endTime = mach_absolute_time();
+// std::size_t elapsedTime = endTime - startTime;
+// static mach_timebase_info_data_t timingInfo;
+// if ( mach_timebase_info (&timingInfo) != KERN_SUCCESS ) { printf ("mach_timebase_info failed\n"); }
+// float millisecs = (elapsedTime * timingInfo.numer / timingInfo.denom) / 1000000;
+// std::cout << millisecs << "ms\n";

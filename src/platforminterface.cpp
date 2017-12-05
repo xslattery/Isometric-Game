@@ -16,7 +16,7 @@ static void simulation_thread_entry ()
 	while ( !terminateSimulationThread )
 	{
 		Scene_Manager::simulate_scene();
-		std::this_thread::sleep_for( std::chrono::milliseconds(10) );
+		std::this_thread::sleep_for( std::chrono::milliseconds(100) );
 	}
 	
 	#if DEBUG
@@ -37,8 +37,8 @@ void init ( const WindowInfo& window )
 
 	glEnable( GL_FRAMEBUFFER_SRGB ); GLCALL;
 	glEnable( GL_DEPTH_TEST ); GLCALL;
-	// glEnable( GL_CULL_FACE ); GLCALL;
-	// glCullFace( GL_BACK ); GLCALL;
+	glEnable( GL_CULL_FACE ); GLCALL;
+	glCullFace( GL_BACK ); GLCALL;
 	glEnable( GL_BLEND); GLCALL;
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); GLCALL;
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO); GLCALL;
