@@ -3,9 +3,16 @@
 
 #include <atomic>
 #include <vector>
-#include "../math.hpp"
-#include "../platform/opengl.hpp"
-#include "../platform/platform.h"
+#include "../../math.hpp"
+#include "../../platform/opengl.hpp"
+#include "../../platform/platform.h"
+
+// TODO(Xavier): (2017.12.5)
+// Change the region class to be a
+// data struct with external functions that
+// modify it. These functions will be passed the region data.
+// Testing should be done to see if this results in a performance
+// improvement or hinderence.
 
 struct Chunk_Textured_Mesh
 {
@@ -89,21 +96,21 @@ struct Region
 	void load ();
 	void save ();
 
-		Floor get_floor ( int x, int y, int z );
-		Wall get_wall ( int x, int y, int z );
-		unsigned char get_water ( int x, int y, int z );
-		Object get_object ( int x, int y, int z );
-		Direction get_direction ( int x, int y, int z );
+	Floor get_floor ( int x, int y, int z );
+	Wall get_wall ( int x, int y, int z );
+	unsigned char get_water ( int x, int y, int z );
+	Object get_object ( int x, int y, int z );
+	Direction get_direction ( int x, int y, int z );
 
-		void build_floor_mesh ();
-		void build_wall_mesh ();
-		void build_water_mesh ();
-		void build_object_mesh ();
+	void build_floor_mesh ();
+	void build_wall_mesh ();
+	void build_water_mesh ();
+	void build_object_mesh ();
 
 
 
 	///////////////////////////
-	// SHARED DATA & METHODS
+	// SHARED DATA
 	std::atomic<bool> regionDataGenerated;
 	std::atomic<bool> simulationPaused;
 
@@ -175,13 +182,6 @@ struct Region
 	float chunk_width;
 	float chunk_height;
 
-	// NOTE(Xavier): (2017.11.29)
-	// These methods are a special case as they will be 
-	// called from the main thread but access data for the simulation thread.
-	// Init will probably have to stay like this, but generate, load & save could
-	// probably be moved to the simulation thread and be called from an issued command.
-	void init ( const WindowInfo& window, unsigned int l, unsigned int w, unsigned int h );
-	void cleanup ();
 
 
 	//////////////////////////////
@@ -204,6 +204,7 @@ struct Region
 
 	unsigned int shader;
 	unsigned int chunkMeshTexture;
+	float projectionScale;
 	mat4 projection;
 	mat4 camera;
 
@@ -216,12 +217,18 @@ struct Region
 		void select_area ( int x, int y, int z );
 		void cancel_selection ();
 		
-		void upload_floor_mesh ( Chunk_Mesh_Data& meshData );
-		void upload_wall_mesh ( Chunk_Mesh_Data& meshData );
-		void upload_water_mesh ( Chunk_Mesh_Data& meshData );
-		void upload_object_mesh ( Chunk_Mesh_Data& meshData );
+	void upload_floor_mesh ( Chunk_Mesh_Data& meshData );
+	void upload_wall_mesh ( Chunk_Mesh_Data& meshData );
+	void upload_water_mesh ( Chunk_Mesh_Data& meshData );
+	void upload_object_mesh ( Chunk_Mesh_Data& meshData );
 
 	void resize( const WindowInfo& window );
+	
+	// NOTE(Xavier): (2017.11.29)
+	// These methods are a special case as they will be 
+	// called from the main thread but access data for the simulation thread.
+	void init ( const WindowInfo& window, unsigned int l, unsigned int w, unsigned int h );
+	void cleanup ();
 };
 
 #endif

@@ -133,28 +133,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 
 	[self setWantsBestResolutionOpenGLSurface:YES];
 
-	// NOTE(Xavier): (2017.11.16) This code adds a 
-	// button on top of the opengl view:
-	[self setWantsLayer:YES];
-	int x = 10;
-    int y = 10;
-    int width = 130;
-    int height = 40;
-    NSButton *myButton = [[[NSButton alloc] initWithFrame:NSMakeRect(x, y, width, height)] autorelease];
-    [self addSubview: myButton];
-    [myButton setTitle: @"Button title!"];
-    [myButton setButtonType:NSMomentaryLightButton];
-    [myButton setBezelStyle:NSRoundedBezelStyle];
-    [myButton setTarget:self];
-    [myButton setAction:@selector(buttonPressed)];
-
 	return self;
-}
-
-// NOTE(Xavier): (2017.11.16) This is the callback for the button press:
-- (void) buttonPressed
-{
-    NSLog(@"Button pressed!"); 
 }
 
 //////////////////////////////////

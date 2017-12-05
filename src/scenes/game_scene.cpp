@@ -64,7 +64,7 @@ void Game_Scene::init( const WindowInfo& window )
 
 	create_text_mesh( "Game Scene", textMesh, packedGlyphTexture, shader );
 
-	region.init( window, 32, 32, 32 );
+	region.init( window, 128, 128, 128 );
 	region.issue_command( Command_Type::GENERATE_REGION_DATA );
 }
 
@@ -105,22 +105,21 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 		region.simulationPaused = !region.simulationPaused;
 
 	float speed = 1000;
-	// if ( get_key( input, Key::Key_W ) )
-	// 	region.camera = translate( region.camera, -vec3(0,1,0)*window.deltaTime*speed );
-	// if ( get_key( input, Key::Key_S ) )
-	// 	region.camera = translate( region.camera, -vec3(0,-1,0)*window.deltaTime*speed );
-	// if ( get_key( input, Key::Key_A ) )
-	// 	region.camera = translate( region.camera, -vec3(-1,0,0)*window.deltaTime*speed );
-	// if ( get_key( input, Key::Key_D ) )
-	// 	region.camera = translate( region.camera, -vec3(1,0,0)*window.deltaTime*speed );
-
-	static float dir = 1;
-	static int count = 0;
-	if(dir > 0) count++;
-	if(dir < 0) count--;
-	if(count > 60) { dir = -dir; }
-	if(count < -60) { dir = -dir; }
-	region.camera = translate( region.camera, -vec3(dir,0,0)*window.deltaTime*speed );
+	if ( get_key( input, Key::Key_W ) )
+		region.camera = translate( region.camera, -vec3(0,1,0)*window.deltaTime*speed );
+	if ( get_key( input, Key::Key_S ) )
+		region.camera = translate( region.camera, -vec3(0,-1,0)*window.deltaTime*speed );
+	if ( get_key( input, Key::Key_A ) )
+		region.camera = translate( region.camera, -vec3(-1,0,0)*window.deltaTime*speed );
+	if ( get_key( input, Key::Key_D ) )
+		region.camera = translate( region.camera, -vec3(1,0,0)*window.deltaTime*speed );
+	
+	if ( input->mouseScrollDeltaY != 0 )
+	{
+		region.projectionScale = region.projectionScale + input->mouseScrollDeltaY*window.deltaTime;
+		if ( region.projectionScale <= 0 ) region.projectionScale = 0.001f;
+		region.projection = orthographic_projection( -window.height/2*region.projectionScale, window.height/2*region.projectionScale, -window.width/2*region.projectionScale, window.width/2*region.projectionScale, 0.1f, 5000.0f );
+	}
 }
 
 //////////////////////////////////////
@@ -138,13 +137,3 @@ Game_Scene::~Game_Scene ()
 
 	region.cleanup();
 }
-
-// #include <mach/mach_time.h>
-// static std::size_t startTime;
-// startTime = mach_absolute_time();
-// std::size_t endTime = mach_absolute_time();
-// std::size_t elapsedTime = endTime - startTime;
-// static mach_timebase_info_data_t timingInfo;
-// if ( mach_timebase_info (&timingInfo) != KERN_SUCCESS ) { printf ("mach_timebase_info failed\n"); }
-// float millisecs = (elapsedTime * timingInfo.numer / timingInfo.denom) / 1000000;
-// std::cout << millisecs << "ms\n";

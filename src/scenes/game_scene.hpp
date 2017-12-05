@@ -5,7 +5,7 @@
 #include "../math.hpp"
 
 #include "scene.hpp"
-#include "region.hpp"
+#include "game_scene/region.hpp"
 
 class Game_Scene : public Scene
 {

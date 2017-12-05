@@ -7,16 +7,40 @@
 #include "globals.hpp"
 #include "scenemanager.hpp"
 
+#ifdef PLATFORM_OSX
+#include <mach/mach_time.h>
+#endif
 
 ///////////////////////////////////
 // Simulation Threaad:
 static std::atomic<bool> terminateSimulationThread;
 static void simulation_thread_entry ()
 {
+	// NOTE(Xavier): (2017.12.5)
+	// This needs to be made crossplatform.
+	#ifdef PLATFORM_OSX
+		mach_timebase_info_data_t timingInfoSimulation;
+		if ( mach_timebase_info (&timingInfoSimulation) != KERN_SUCCESS )
+			printf ("ERROR: mach_timebase_info failed\n");
+		std::size_t startTime;
+	#endif
+
+	std::size_t delta = 0;
 	while ( !terminateSimulationThread )
 	{
+		#ifdef PLATFORM_OSX
+			startTime = mach_absolute_time();
+		#endif
+		
 		Scene_Manager::simulate_scene();
-		std::this_thread::sleep_for( std::chrono::milliseconds(100) );
+	
+		#ifdef PLATFORM_OSX
+			std::size_t endTime = mach_absolute_time();
+			std::size_t elapsedTime = endTime - startTime;
+			delta = (elapsedTime * timingInfoSimulation.numer / timingInfoSimulation.denom) / 1000000;
+		#endif
+
+		std::this_thread::sleep_for( std::chrono::milliseconds(100-delta) );
 	}
 	
 	#if DEBUG
