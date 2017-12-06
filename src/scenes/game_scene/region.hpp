@@ -73,6 +73,7 @@ enum class Command_Type
 	// LOAD_REGION_DATA,
 	// SAVE_REGION_DATA,
 	ROTATE_RIGHT,
+	ROTATE_LEFT,
 };
 
 struct Region
@@ -235,7 +236,7 @@ struct Region
 	// NOTE(Xavier): (2017.11.29)
 	// These methods are a special case as they will be 
 	// called from the main thread but access data for the simulation thread.
-	void init ( const WindowInfo& window, unsigned int l, unsigned int w, unsigned int h );
+	void init ( const WindowInfo& window, unsigned int l, unsigned int w, unsigned int h, unsigned int cl, unsigned int cw, unsigned int ch );
 	void cleanup ();
 };
 

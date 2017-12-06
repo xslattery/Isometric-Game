@@ -68,7 +68,7 @@ void Game_Scene::init( const WindowInfo& window )
 	generatingTextMesh.fontsize = 16;
 	create_text_mesh( "Generating region...", generatingTextMesh, packedGlyphTexture, shader );
 
-	region.init( window, 32, 32, 128 );
+	region.init( window, 128, 128, 196, 64, 64, 16 );
 	region.issue_command( Command_Type::GENERATE_REGION_DATA );
 }
 
@@ -78,7 +78,9 @@ void Game_Scene::render ( const WindowInfo& window )
 
 		"DT: " + std::to_string(window.deltaTime) +
 		"\nDIM: " + std::to_string((int)window.hidpi_width) + "x" + std::to_string((int)window.hidpi_height) +
-		"\nS: " + std::to_string(region.projectionScale)
+		"\nS: " + std::to_string(region.projectionScale) + 
+		"\nL: " + std::to_string(region.length) + " W: " + std::to_string(region.width) + " H: " + std::to_string(region.height) +
+		"\nCL: " + std::to_string((int)region.chunk_length) + " CW: " + std::to_string((int)region.chunk_width) + " CH: " + std::to_string((int)region.chunk_height)
 		
 		).c_str(), textMesh, packedGlyphTexture, shader );
 
@@ -154,6 +156,8 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 
 	if ( get_key_down( input, Key::Key_H ) )
 		region.issue_command( Command_Type::ROTATE_RIGHT );
+	if ( get_key_down( input, Key::Key_J ) )
+		region.issue_command( Command_Type::ROTATE_LEFT );
 }
 
 //////////////////////////////////////

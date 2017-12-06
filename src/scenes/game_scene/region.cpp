@@ -68,6 +68,24 @@ void Region::simulate()
 						}
 						break;
 
+					case Command_Type::ROTATE_LEFT:
+						viewDirection = static_cast<Direction>( static_cast<int>(viewDirection) + 1 );
+						if ( static_cast<int>(viewDirection) > 4) viewDirection = Direction::N;
+						for ( unsigned int i = 0; i < ceil(height/chunk_height); ++i )
+						{
+							for ( unsigned int j = 0; j < ceil(width/chunk_width); ++j )
+							{
+								for ( unsigned int k = 0; k < ceil(length/chunk_length); ++k )
+								{
+									meshesNeedingUpdate_floor.push_back( vec3(k, j, i) );
+									meshesNeedingUpdate_wall.push_back( vec3(k, j, i) );
+									// meshesNeedingUpdate_water.push_back( vec3(k, j, i) );
+									// meshesNeedingUpdate_object.push_back( vec3(k, j, i) );
+								}
+							}
+						}
+						break;
+
 					default: break;
 				}
 			}
@@ -199,24 +217,24 @@ void Region::build_floor_mesh ()
 								if ( get_floor(ox+xx-1, oy+yy, oz+zz) != Floor::NONE && get_floor(ox+xx, oy+yy+1, oz+zz) != Floor::NONE && get_wall(ox+xx, oy+yy, oz+zz) != Wall::NONE )
 									continue;
 
-								pos = ( (xx+ox)*yDir + (width-(yy+oy))*xDir ) * 27;
-								zPos = -(xx+ox + width-(yy+oy)) + (zz+oz)*2;	
+								pos = ( (xx+ox)*yDir + (width-1-(yy+oy))*xDir ) * 27;
+								zPos = -(xx+ox + width-1-(yy+oy)) + (zz+oz)*2;	
 							}
 							else if ( viewDirection == Direction::S )
 							{
 								if ( get_floor(ox+xx+1, oy+yy, oz+zz) != Floor::NONE && get_floor(ox+xx, oy+yy+1, oz+zz) != Floor::NONE && get_wall(ox+xx, oy+yy, oz+zz) != Wall::NONE )
 									continue;
 
-								pos = ( (length-(xx+ox))*xDir + (width-(yy+oy))*yDir ) * 27;
-								zPos = -(length-(xx+ox) + width-(yy+oy)) + (zz+oz)*2;
+								pos = ( (length-1-(xx+ox))*xDir + (width-1-(yy+oy))*yDir ) * 27;
+								zPos = -(length-1-(xx+ox) + width-1-(yy+oy)) + (zz+oz)*2;
 							}
 							else if ( viewDirection == Direction::E )
 							{
 								if ( get_floor(ox+xx+1, oy+yy, oz+zz) != Floor::NONE && get_floor(ox+xx, oy+yy-1, oz+zz) != Floor::NONE && get_wall(ox+xx, oy+yy, oz+zz) != Wall::NONE )
 									continue;
 
-								pos = ( (length-(xx+ox))*yDir + (yy+oy)*xDir ) * 27;
-								zPos = -(length-(xx+ox) + (yy+oy)) + (zz+oz)*2;
+								pos = ( (length-1-(xx+ox))*yDir + (yy+oy)*xDir ) * 27;
+								zPos = -(length-1-(xx+ox) + (yy+oy)) + (zz+oz)*2;
 							}
 							pos += vec2{ 0, 30 } * (zz+oz);
 
@@ -321,24 +339,24 @@ void Region::build_wall_mesh ()
 								if ( get_wall(ox+xx-1, oy+yy, oz+zz) != Wall::NONE && get_wall(ox+xx, oy+yy+1, oz+zz) != Wall::NONE && get_floor(ox+xx, oy+yy, oz+zz+1) != Floor::NONE )
 									continue;
 
-								pos = ( (xx+ox)*yDir + (width-(yy+oy))*xDir ) * 27;
-								zPos = -(xx+ox + width-(yy+oy)) + (zz+oz)*2 + 0.1f;
+								pos = ( (xx+ox)*yDir + (width-1-(yy+oy))*xDir ) * 27;
+								zPos = -(xx+ox + width-1-(yy+oy)) + (zz+oz)*2 + 0.1f;
 							}
 							else if ( viewDirection == Direction::S )
 							{
 								if ( get_wall(ox+xx+1, oy+yy, oz+zz) != Wall::NONE && get_wall(ox+xx, oy+yy+1, oz+zz) != Wall::NONE && get_floor(ox+xx, oy+yy, oz+zz+1) != Floor::NONE )
 									continue;
 
-								pos = ( (length-(xx+ox))*xDir + (width-(yy+oy))*yDir ) * 27;
-								zPos = -(length-(xx+ox) + width-(yy+oy)) + (zz+oz)*2 + 0.1f;
+								pos = ( (length-1-(xx+ox))*xDir + (width-1-(yy+oy))*yDir ) * 27;
+								zPos = -(length-1-(xx+ox) + width-1-(yy+oy)) + (zz+oz)*2 + 0.1f;
 							}
 							else if ( viewDirection == Direction::E )
 							{
 								if ( get_wall(ox+xx+1, oy+yy, oz+zz) != Wall::NONE && get_wall(ox+xx, oy+yy-1, oz+zz) != Wall::NONE && get_floor(ox+xx, oy+yy, oz+zz+1) != Floor::NONE )
 									continue;
 
-								pos = ( (length-(xx+ox))*yDir + (yy+oy)*xDir ) * 27;
-								zPos = -(length-(xx+ox) + (yy+oy)) + (zz+oz)*2 + 0.1f;
+								pos = ( (length-1-(xx+ox))*yDir + (yy+oy)*xDir ) * 27;
+								zPos = -(length-1-(xx+ox) + (yy+oy)) + (zz+oz)*2 + 0.1f;
 							}
 							pos += vec2{ 0, 30 } * (zz+oz);
 
@@ -596,19 +614,14 @@ static void load_texture ( unsigned int* texID, const char* name )
 	}
 }
 
-void Region::init ( const WindowInfo& window, unsigned int l, unsigned int w, unsigned int h )
+void Region::init ( const WindowInfo& window, unsigned int l, unsigned int w, unsigned int h, unsigned int cl, unsigned int cw, unsigned int ch )
 {
 	length = l;
 	width = w;
 	height = h;
-	chunk_length = 64;
-	chunk_width = 64;
-	// NOTE(Xavier): (2017.12.5)
-	// An idea for how to allow scrolling through heights
-	// when chunk heights greater than 1 is to the the index count.
-	// the could for each height of the chunk could be stored in an array
-	// and only the ammount needed for that height will be drawn.
-	chunk_height = 16;
+	chunk_length = cl;
+	chunk_width = cw;
+	chunk_height = ch;
 
 	viewHeight = h;
 
@@ -714,10 +727,12 @@ void Region::render ()
 			{
 				for ( auto& m : chunkMeshesToBeUploaded_1 )
 				{
-					if ( m.floorVertData.size() > 0 ) upload_floor_mesh( m );
-					if ( m.wallVertData.size() > 0 ) upload_wall_mesh( m );
+					// if ( m.floorVertData.size() > 0 ) upload_floor_mesh( m );
+					// if ( m.wallVertData.size() > 0 ) upload_wall_mesh( m );
 					// if ( m.waterVertData.size() > 0 ) upload_water_mesh( m );
 					// if ( m.objectVertData.size() > 0 ) upload_object_mesh( m );
+					upload_floor_mesh( m );
+					upload_wall_mesh( m );
 				}
 				chunkMeshesToBeUploaded_1.clear();
 			}
@@ -734,10 +749,12 @@ void Region::render ()
 			{
 				for ( auto& m : chunkMeshesToBeUploaded_2 )
 				{
-					if ( m.floorVertData.size() > 0 ) upload_floor_mesh( m );
-					if ( m.wallVertData.size() > 0 ) upload_wall_mesh( m );
+					// if ( m.floorVertData.size() > 0 ) upload_floor_mesh( m );
+					// if ( m.wallVertData.size() > 0 ) upload_wall_mesh( m );
 					// if ( m.waterVertData.size() > 0 ) upload_water_mesh( m );
 					// if ( m.objectVertData.size() > 0 ) upload_object_mesh( m );
+					upload_floor_mesh( m );
+					upload_wall_mesh( m );
 				}
 				chunkMeshesToBeUploaded_2.clear();
 			}
