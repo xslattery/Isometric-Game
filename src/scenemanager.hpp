@@ -24,6 +24,7 @@ public:
 	static Scene *mainScene;
 	static Scene *activeScene; // IF nullprt mainScene as the acive scene is implied.
 	static std::atomic<bool> shouldUpdate;
+	static std::atomic<bool> stoppedUpdating;
 	static std::atomic<int> updateRate;
 
 	////////////////////////////////////////////////////////////

@@ -25,6 +25,8 @@ static void simulation_thread_entry ()
 		std::size_t startTime;
 	#endif
 
+	unsigned int simTime = 10;
+
 	std::size_t delta = 0;
 	while ( !terminateSimulationThread )
 	{
@@ -38,14 +40,16 @@ static void simulation_thread_entry ()
 			std::size_t endTime = mach_absolute_time();
 			std::size_t elapsedTime = endTime - startTime;
 			delta = (elapsedTime * timingInfoSimulation.numer / timingInfoSimulation.denom) / 1000000;
-			if (delta > 100) delta = 100;
+			if (delta > simTime) delta = simTime;
 			// NOTE(Xavier): (2017.12.5)
 			// The precission here could be improved to microseconds or better.
 			// Instead of milliseconds.
 		#endif
 
-		std::this_thread::sleep_for( std::chrono::milliseconds(100-delta) );
+		std::this_thread::sleep_for( std::chrono::milliseconds(simTime-delta) );
 	}
+
+	Scene_Manager::stoppedUpdating = true;
 	
 	#if DEBUG
 		std::cout << "Exited Logic Thread." << std::endl;

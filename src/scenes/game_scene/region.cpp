@@ -6,6 +6,9 @@
 #include "../../shader.hpp"
 #include "../../perlin.hpp"
 
+#ifdef PLATFORM_OSX
+#include <mach/mach_time.h>
+#endif
 
 /////////////////////////
 // SIMULATION THREAD:
@@ -61,7 +64,7 @@ void Region::simulate()
 								{
 									meshesNeedingUpdate_floor.push_back( vec3(k, j, i) );
 									meshesNeedingUpdate_wall.push_back( vec3(k, j, i) );
-									// meshesNeedingUpdate_water.push_back( vec3(k, j, i) );
+									meshesNeedingUpdate_water.push_back( vec3(k, j, i) );
 									// meshesNeedingUpdate_object.push_back( vec3(k, j, i) );
 								}
 							}
@@ -79,7 +82,7 @@ void Region::simulate()
 								{
 									meshesNeedingUpdate_floor.push_back( vec3(k, j, i) );
 									meshesNeedingUpdate_wall.push_back( vec3(k, j, i) );
-									// meshesNeedingUpdate_water.push_back( vec3(k, j, i) );
+									meshesNeedingUpdate_water.push_back( vec3(k, j, i) );
 									// meshesNeedingUpdate_object.push_back( vec3(k, j, i) );
 								}
 							}
@@ -129,15 +132,66 @@ void Region::simulate()
 	{
 		if ( !simulationPaused )
 		{
-			// TODO(Xavier) (2017.12.5)
+			// TODO(Xavier): (2017.12.5)
 			// Simulate the region.
+
+			// TODO(Xavier): (2017.12.6)
+			// The water simulation below needs a lot of optimization.
+			if ( rand()%1000 > 100 )
+			{
+				vec3 newWaterPos { rand()%length, rand()%width, height-1 };
+				tiles.water[ (int)newWaterPos.x + (int)newWaterPos.y*length + (int)newWaterPos.z*length*width ] = rand()%5;
+				waterNeedingUpdate.emplace_back( newWaterPos );
+			}
+			std::vector<vec3> newWaterNeedingUpdate;
+			for ( auto& w : waterNeedingUpdate )
+			{
+				unsigned int xx, yy, zz;
+				xx = w.x;
+				yy = w.y;
+				zz = w.z;
+				
+				if ( get_floor( xx, yy, zz ) == Floor::NONE && get_wall( xx, yy, zz-1 ) == Wall::NONE )
+				{
+					tiles.water[ xx + yy*length + (zz-1)*length*width ] = tiles.water[ xx + yy*length + zz*length*width ];
+					tiles.water[ xx + yy*length + zz*length*width ] = 0;
+
+					newWaterNeedingUpdate.emplace_back( xx, yy, zz-1 );
+
+					vec3 insideChunkPosition_new { floor(w.x/chunk_length), floor(w.y/chunk_width), floor((w.z-1)/chunk_height) };
+					vec3 insideChunkPosition_old { floor(w.x/chunk_length), floor(w.y/chunk_width), floor(w.z/chunk_height) };
+					bool alreadySetForUpdate_new = false;
+					bool alreadySetForUpdate_old = false;
+					for ( auto& c : meshesNeedingUpdate_water )
+					{
+						if ( c == insideChunkPosition_new ) alreadySetForUpdate_new = true;
+						if ( c == insideChunkPosition_old ) alreadySetForUpdate_old = true;
+					}
+					if ( !alreadySetForUpdate_new ) meshesNeedingUpdate_water.push_back( insideChunkPosition_new );
+					if ( !alreadySetForUpdate_old ) meshesNeedingUpdate_water.push_back( insideChunkPosition_old );
+				}
+			}
+			waterNeedingUpdate = std::move( newWaterNeedingUpdate );
 		}
 
 		build_floor_mesh();
 		build_wall_mesh();
-		// build_water_mesh();
+		build_water_mesh();
 		// build_object_mesh();
 	}
+
+#ifdef PLATFORM_OSX
+	mach_timebase_info_data_t timingInfoSimulation;
+	if ( mach_timebase_info (&timingInfoSimulation) != KERN_SUCCESS )
+		printf ("ERROR: mach_timebase_info failed\n");
+
+	static std::size_t startTime;
+	std::size_t endTime = mach_absolute_time();
+	std::size_t elapsedTime = endTime - startTime;
+	startTime = mach_absolute_time();
+	// simulationDeltaTime = elapsedTime;
+	simulationDeltaTime = (elapsedTime * timingInfoSimulation.numer / timingInfoSimulation.denom) / 1000;
+#endif
 }
 
 Floor Region::get_floor ( int x, int y, int z )
@@ -421,58 +475,143 @@ void Region::build_wall_mesh ()
 static std::size_t buildAgeIdentifier_water = 0;
 void Region::build_water_mesh ()
 {
-	// if ( meshesNeedingUpdate_water.size() > 0 )
-	// {
-	// 	for ( auto p : meshesNeedingUpdate_water )
-	// 	{
-	// 		// TODO(Xavier): (2017.11.30) Build water mesh ...
-	// 		// TEMP(Xavier): (2017.11.30)
-	// 		// This is here only to test the simulation passing data
-	// 		// to the render thread.
-	// 		float offset = rand()%300;
-	// 		std::vector<float> verts = 
-	// 		{
-	// 			100+offset, 100, 0,
-	// 			100+offset, 200, 0,
-	// 			200+offset, 100, 0,
-	// 		};
-	// 		std::vector<unsigned int> indices = 
-	// 		{
-	// 			0, 1, 2,
-	// 		};
+	if ( meshesNeedingUpdate_water.size() > 0 )
+	{
+		for ( auto p : meshesNeedingUpdate_water )
+		{
+			std::vector<float> verts;
+			std::vector<unsigned int> indices;
+			std::vector<unsigned int> indexCount;
+			float ox = p.x * chunk_length;
+			float oy = p.y * chunk_width;
+			float oz = p.z * chunk_height;
+			vec2 xDir { -1, 18.0f/27.0f };
+			vec2 yDir {  1, 18.0f/27.0f };
 
-	// 		// Pass to shared mesh data ...
-	// 		if ( renderingUsingUploadQue_2 == false )
-	// 		{
-	// 			simulationUsingUploadQue_2 = true;
-	// 			if ( renderingUsingUploadQue_2 == false )
-	// 			{
-	// 				chunkMeshesToBeUploaded_2.emplace_back( p );
-	// 				auto& cm = chunkMeshesToBeUploaded_2.back();
-	// 				buildAgeIdentifier_water++;
-	// 				cm.ageIdentifier_water = buildAgeIdentifier_water;
-	// 				cm.waterVertData = std::move( verts );
-	// 				cm.waterIndexData = std::move( indices );
-	// 				simulationUsingUploadQue_2 = false;
-	// 			} else { simulationUsingUploadQue_2 = false; }
-	// 		}
-	// 		else if ( renderingUsingUploadQue_1 == false )
-	// 		{
-	// 			simulationUsingUploadQue_1 = true;
-	// 			if ( renderingUsingUploadQue_1 == false )
-	// 			{
-	// 				chunkMeshesToBeUploaded_1.emplace_back( p );
-	// 				auto& cm = chunkMeshesToBeUploaded_1.back();
-	// 				buildAgeIdentifier_water++;
-	// 				cm.ageIdentifier_water = buildAgeIdentifier_water;
-	// 				cm.waterVertData = std::move( verts );
-	// 				cm.waterIndexData = std::move( indices );
-	// 				simulationUsingUploadQue_1 = false;
-	// 			} else { simulationUsingUploadQue_1 = false; }
-	// 		}
-	// 	}
-	// 	meshesNeedingUpdate_water.clear();
-	// }
+			for ( float zz = 0; zz < chunk_height; ++zz )
+			{
+				for ( float yy = 0; yy < chunk_width; ++yy )
+				{
+					for ( float xx = 0; xx < chunk_length; ++xx )
+					{
+						auto waterLevel = get_water(ox+xx, oy+yy, oz+zz);
+						if ( waterLevel > 0 && waterLevel < 5 )
+						{
+							vec2 tl;
+							vec2 br;
+							if ( waterLevel == 1 )
+							{
+								tl = { 0, 			1.0f-1.0f/512*68*3 };
+								br = { 1.0f/512*54,	1.0f-1.0f/512*68*2 };
+							}
+							else if ( waterLevel == 2 )
+							{
+								tl = { 1.0f/512*54, 	1.0f-1.0f/512*68*3 };
+								br = { 1.0f/512*54*2,	1.0f-1.0f/512*68*2 };
+							}
+							else if ( waterLevel == 3 )
+							{
+								tl = { 1.0f/512*54*2, 	1.0f-1.0f/512*68*3 };
+								br = { 1.0f/512*54*3,	1.0f-1.0f/512*68*2 };
+							}
+							else if ( waterLevel == 4 )
+							{
+								tl = { 1.0f/512*54*3, 	1.0f-1.0f/512*68*3 };
+								br = { 1.0f/512*54*4,	1.0f-1.0f/512*68*2 };
+							}
+
+							vec2 pos;
+							float zPos = 0;
+							if ( viewDirection == Direction::N )
+							{
+								if ( get_wall(ox+xx-1, oy+yy, oz+zz) != Wall::NONE && get_wall(ox+xx, oy+yy-1, oz+zz) != Wall::NONE && get_floor(ox+xx, oy+yy, oz+zz+1) != Floor::NONE )
+									continue;
+
+								pos = ( (xx+ox)*xDir + (yy+oy)*yDir ) * 27;
+								zPos = -(xx+ox + yy+oy) + (zz+oz)*2 + 0.1f;
+							}
+							else if ( viewDirection == Direction::W )
+							{
+								if ( get_wall(ox+xx-1, oy+yy, oz+zz) != Wall::NONE && get_wall(ox+xx, oy+yy+1, oz+zz) != Wall::NONE && get_floor(ox+xx, oy+yy, oz+zz+1) != Floor::NONE )
+									continue;
+
+								pos = ( (xx+ox)*yDir + (width-1-(yy+oy))*xDir ) * 27;
+								zPos = -(xx+ox + width-1-(yy+oy)) + (zz+oz)*2 + 0.1f;
+							}
+							else if ( viewDirection == Direction::S )
+							{
+								if ( get_wall(ox+xx+1, oy+yy, oz+zz) != Wall::NONE && get_wall(ox+xx, oy+yy+1, oz+zz) != Wall::NONE && get_floor(ox+xx, oy+yy, oz+zz+1) != Floor::NONE )
+									continue;
+
+								pos = ( (length-1-(xx+ox))*xDir + (width-1-(yy+oy))*yDir ) * 27;
+								zPos = -(length-1-(xx+ox) + width-1-(yy+oy)) + (zz+oz)*2 + 0.1f;
+							}
+							else if ( viewDirection == Direction::E )
+							{
+								if ( get_wall(ox+xx+1, oy+yy, oz+zz) != Wall::NONE && get_wall(ox+xx, oy+yy-1, oz+zz) != Wall::NONE && get_floor(ox+xx, oy+yy, oz+zz+1) != Floor::NONE )
+									continue;
+
+								pos = ( (length-1-(xx+ox))*yDir + (yy+oy)*xDir ) * 27;
+								zPos = -(length-1-(xx+ox) + (yy+oy)) + (zz+oz)*2 + 0.1f;
+							}
+							pos += vec2{ 0, 30 } * (zz+oz);
+
+							unsigned int idxP = verts.size()/5;
+							unsigned int tempIndices [6] =
+							{
+								idxP+0, idxP+1, idxP+2,
+								idxP+2, idxP+1, idxP+3
+							};
+							indices.insert( indices.end(), tempIndices, tempIndices+6 );
+
+							float tempVerts [20] =
+							{
+								-27.0f+pos.x, 68.0f+pos.y, zPos,		tl.x, tl.y,
+								-27.0f+pos.x,  0.0f+pos.y, zPos,		tl.x, br.y,
+								 27.0f+pos.x, 68.0f+pos.y, zPos,		br.x, tl.y,
+								 27.0f+pos.x,  0.0f+pos.y, zPos,		br.x, br.y,
+							};
+							verts.insert( verts.end(), tempVerts, tempVerts+20 );
+						}
+					}
+				}
+				indexCount.push_back( indices.size() );
+			}
+
+			// Pass to shared mesh data ...
+			if ( renderingUsingUploadQue_2 == false )
+			{
+				simulationUsingUploadQue_2 = true;
+				if ( renderingUsingUploadQue_2 == false )
+				{
+					chunkMeshesToBeUploaded_2.emplace_back( p );
+					auto& cm = chunkMeshesToBeUploaded_2.back();
+					buildAgeIdentifier_water++;
+					cm.ageIdentifier_water = buildAgeIdentifier_water;
+					cm.waterVertData = std::move( verts );
+					cm.waterIndexData = std::move( indices );
+					cm.waterIndexCount = std::move( indexCount );
+					simulationUsingUploadQue_2 = false;
+				} else { simulationUsingUploadQue_2 = false; }
+			}
+			else if ( renderingUsingUploadQue_1 == false )
+			{
+				simulationUsingUploadQue_1 = true;
+				if ( renderingUsingUploadQue_1 == false )
+				{
+					chunkMeshesToBeUploaded_1.emplace_back( p );
+					auto& cm = chunkMeshesToBeUploaded_1.back();
+					buildAgeIdentifier_water++;
+					cm.ageIdentifier_water = buildAgeIdentifier_water;
+					cm.waterVertData = std::move( verts );
+					cm.waterIndexData = std::move( indices );
+					cm.waterIndexCount = std::move( indexCount );
+					simulationUsingUploadQue_1 = false;
+				} else { simulationUsingUploadQue_1 = false; }
+			}
+		}
+		meshesNeedingUpdate_water.clear();
+	}
 }
 
 static std::size_t buildAgeIdentifier_object = 0;
@@ -546,18 +685,19 @@ void Region::generate ()
 		{
 			for ( unsigned int k = 0; k < length; ++k )
 			{
-				int height = static_cast<int>(generate_height_data( k, j, 350, 4, 0.5f, 2.5f, 1 ) * 25.0f ) + 64;
-				
-				if ( height > i ) tiles.floor[ i*width*length + j*length + k ] = Floor::STONE;
-				else tiles.floor[ i*width*length + j*length + k ] = Floor::NONE;
-
-				if ( height-1 > i ) tiles.wall[ i*width*length + j*length + k ] = Wall::STONE;
-				else tiles.wall[ i*width*length + j*length + k ] = Wall::NONE;	
-				
 				tiles.water[ i*width*length + j*length + k ] = 0;
 				tiles.object[ i*width*length + j*length + k ] = Object::NONE;
 				tiles.direction[ i*width*length + j*length + k ] = Direction::NONE;
-			}	
+				
+				int genHeight = static_cast<int>(generate_height_data( k, j, 350, 4, 0.5f, 2.5f, 1 ) * 25.0f ) + 64;
+				if ( genHeight > i ) tiles.floor[ i*width*length + j*length + k ] = Floor::STONE;
+				else tiles.floor[ i*width*length + j*length + k ] = Floor::NONE;
+				if ( genHeight-1 > i ) tiles.wall[ i*width*length + j*length + k ] = Wall::STONE;
+				else tiles.wall[ i*width*length + j*length + k ] = Wall::NONE;
+				
+				if ( i == height-1 ) tiles.water[ i*width*length + j*length + k ] = rand()%5;
+				if ( tiles.water[i*width*length + j*length + k] > 0 ) waterNeedingUpdate.emplace_back( k, j, i );
+			}
 		}
 	}
 
@@ -569,7 +709,7 @@ void Region::generate ()
 			{
 				meshesNeedingUpdate_floor.push_back( vec3(k, j, i) );
 				meshesNeedingUpdate_wall.push_back( vec3(k, j, i) );
-				// meshesNeedingUpdate_water.push_back( vec3(k, j, i) );
+				meshesNeedingUpdate_water.push_back( vec3(k, j, i) );
 				// meshesNeedingUpdate_object.push_back( vec3(k, j, i) );
 			}
 		}
@@ -625,6 +765,7 @@ void Region::init ( const WindowInfo& window, unsigned int l, unsigned int w, un
 
 	viewHeight = h;
 
+	simulationDeltaTime = 0;
 	simulationPaused = false;
 	regionDataGenerated = false;
 	simulationUsingUploadQue_1 = false;
@@ -700,6 +841,8 @@ void Region::init ( const WindowInfo& window, unsigned int l, unsigned int w, un
 
 void Region::cleanup ()
 {
+	simulationPaused = true;
+
 	free( tiles.floor );
 	free( tiles.wall );
 	free( tiles.water );
@@ -733,6 +876,7 @@ void Region::render ()
 					// if ( m.objectVertData.size() > 0 ) upload_object_mesh( m );
 					upload_floor_mesh( m );
 					upload_wall_mesh( m );
+					upload_water_mesh( m );
 				}
 				chunkMeshesToBeUploaded_1.clear();
 			}
@@ -755,6 +899,7 @@ void Region::render ()
 					// if ( m.objectVertData.size() > 0 ) upload_object_mesh( m );
 					upload_floor_mesh( m );
 					upload_wall_mesh( m );
+					upload_water_mesh( m );
 				}
 				chunkMeshesToBeUploaded_2.clear();
 			}
@@ -793,14 +938,14 @@ void Region::render ()
 			glDrawElements( GL_TRIANGLES, cm.wall.indexCount[indexOffset], GL_UNSIGNED_INT, 0 ); GLCALL;
 		}
 
-		// if ( cm.water.vao != 0 && cm.water.numIndices != 0 )
-		// {
-		// 	auto mtx = translate(mat4(1), vec3(0));
-		// 	set_uniform_mat4( shader, "model", &mtx );
-		// 	glBindVertexArray( cm.water.vao ); GLCALL;
-		// 	glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
-		// 	glDrawElements( GL_TRIANGLES, cm.water.numIndices, GL_UNSIGNED_INT, 0 ); GLCALL;
-		// }
+		if ( cm.water.vao != 0 && cm.water.numIndices != 0 )
+		{
+			auto mtx = translate(mat4(1), vec3(0));
+			set_uniform_mat4( shader, "model", &mtx );
+			glBindVertexArray( cm.water.vao ); GLCALL;
+			glBindTexture( GL_TEXTURE_2D, chunkMeshTexture ); GLCALL;
+			glDrawElements( GL_TRIANGLES, cm.water.indexCount[indexOffset], GL_UNSIGNED_INT, 0 ); GLCALL;
+		}
 		
 		// if ( cm.object.vao != 0 && cm.object.numIndices != 0 )
 		// {
@@ -932,36 +1077,41 @@ void Region::upload_wall_mesh ( Chunk_Mesh_Data& meshData )
 
 void Region::upload_water_mesh ( Chunk_Mesh_Data& meshData )
 {
-	// int cl =  ceil(length/chunk_length);
-	// int cw =  ceil(width/chunk_width);
-	// auto index = static_cast<unsigned int>(meshData.position.x + meshData.position.y*cl + meshData.position.z*cl*cw);
-	// auto& cm = chunkMeshes[ index ];
+	int cl =  ceil(length/chunk_length);
+	int cw =  ceil(width/chunk_width);
+	auto index = static_cast<unsigned int>(meshData.position.x + meshData.position.y*cl + meshData.position.z*cl*cw);
+	auto& cm = chunkMeshes[ index ];
 
-	// if ( cm.ageIdentifier_water <= meshData.ageIdentifier_water )
-	// {
-	// 	cm.ageIdentifier_water = meshData.ageIdentifier_water;
-	// 	cm.position = meshData.position;
+	if ( cm.ageIdentifier_water <= meshData.ageIdentifier_water )
+	{
+		cm.ageIdentifier_water = meshData.ageIdentifier_water;
+		cm.position = meshData.position;
 
-	// 	if ( cm.water.vao == 0 ) { glGenVertexArrays( 1, &cm.water.vao ); GLCALL; }
-	// 	if ( cm.water.vbo == 0 ) { glGenBuffers( 1, &cm.water.vbo ); GLCALL; }
-	// 	if ( cm.water.ibo == 0 ) { glGenBuffers( 1, &cm.water.ibo ); GLCALL; }
+		if ( cm.water.vao == 0 ) { glGenVertexArrays( 1, &cm.water.vao ); GLCALL; }
+		if ( cm.water.vbo == 0 ) { glGenBuffers( 1, &cm.water.vbo ); GLCALL; }
+		if ( cm.water.ibo == 0 ) { glGenBuffers( 1, &cm.water.ibo ); GLCALL; }
 
-	// 	glBindVertexArray( cm.water.vao ); GLCALL;
+		glBindVertexArray( cm.water.vao ); GLCALL;
 		
-	// 		glBindBuffer( GL_ARRAY_BUFFER, cm.water.vbo ); GLCALL;
-	// 			glBufferData( GL_ARRAY_BUFFER, meshData.waterVertData.size() * sizeof( float ), meshData.waterVertData.data(), GL_DYNAMIC_DRAW ); GLCALL;
+			glBindBuffer( GL_ARRAY_BUFFER, cm.water.vbo ); GLCALL;
+				glBufferData( GL_ARRAY_BUFFER, meshData.waterVertData.size() * sizeof( float ), meshData.waterVertData.data(), GL_DYNAMIC_DRAW ); GLCALL;
 			
-	// 			GLint posAttrib = glGetAttribLocation( shader, "position" ); GLCALL;
-	// 			glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 ); GLCALL;
-	// 			glEnableVertexAttribArray( posAttrib ); GLCALL;
+				GLint posAttrib = glGetAttribLocation( shader, "position" ); GLCALL;
+				glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0 ); GLCALL;
+				glEnableVertexAttribArray( posAttrib ); GLCALL;
 
-	// 		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.water.ibo ); GLCALL;
-	// 			glBufferData( GL_ELEMENT_ARRAY_BUFFER, meshData.waterIndexData.size() * sizeof(unsigned int), meshData.waterIndexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
+				GLint texAttrib = glGetAttribLocation( shader, "textcoord" ); GLCALL;
+				glVertexAttribPointer( texAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12 ); GLCALL;
+				glEnableVertexAttribArray( texAttrib ); GLCALL;
+
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.water.ibo ); GLCALL;
+				glBufferData( GL_ELEMENT_ARRAY_BUFFER, meshData.waterIndexData.size() * sizeof(unsigned int), meshData.waterIndexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
 		
-	// 	cm.water.numIndices = meshData.waterIndexData.size();
+		cm.water.numIndices = meshData.waterIndexData.size();
+		cm.water.indexCount = std::move( meshData.waterIndexCount );
 
-	// 	glBindVertexArray( 0 ); GLCALL;
-	// }
+		glBindVertexArray( 0 ); GLCALL;
+	}
 }
 
 void Region::upload_object_mesh ( Chunk_Mesh_Data& meshData )

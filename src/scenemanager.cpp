@@ -24,6 +24,7 @@ Scene* load_game_scene( const WindowInfo& window )
 Scene *Scene_Manager::mainScene = nullptr;
 Scene *Scene_Manager::activeScene = nullptr;
 std::atomic<bool> Scene_Manager::shouldUpdate;
+std::atomic<bool> Scene_Manager::stoppedUpdating;
 std::atomic<int> Scene_Manager::updateRate;
 
 
@@ -34,13 +35,14 @@ void Scene_Manager::init( const WindowInfo& window )
 	// Load the main scene:
 	mainScene = load_main_scene( window );
 	shouldUpdate = false;
+	stoppedUpdating = false;
 	updateRate = 0;
 }
 
 void Scene_Manager::exit()
 {
 	disable_updating();
-	while ( is_updating() ); // Wait until the scene is no longer being updated.
+	while ( !stoppedUpdating ); // Wait until the scene is no longer being updated.
 	
 	// Cleanup and release all data:
 	if ( activeScene != nullptr ) delete activeScene;
@@ -88,7 +90,7 @@ void Scene_Manager::input_scene( const WindowInfo& window, InputInfo* input )
 void Scene_Manager::change_scene( SceneType scene, const WindowInfo& window )
 {
 	disable_updating();
-	while ( is_updating() ); // Wait until the scene is no longer being updated.
+	while ( !stoppedUpdating ); // Wait until the scene is no longer being updated.
 	
 	if ( activeScene != nullptr ) delete activeScene;
 	activeScene = nullptr;
@@ -114,6 +116,7 @@ void Scene_Manager::simulate_scene()
 {
 	if ( shouldUpdate )
 	{
+		stoppedUpdating = false;
 		if ( activeScene != nullptr ) { activeScene->simulate(); }
 		else
 		{
@@ -121,5 +124,9 @@ void Scene_Manager::simulate_scene()
 			// Because there is no acive scene this medhod
 			// does not need to do anything.
 		}
+	}
+	else
+	{
+		stoppedUpdating = true;
 	}
 }

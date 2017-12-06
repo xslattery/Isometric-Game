@@ -94,6 +94,8 @@ struct Region
 	std::vector<vec3> meshesNeedingUpdate_water;
 	std::vector<vec3> meshesNeedingUpdate_object;
 
+	std::vector<vec3> waterNeedingUpdate;
+
 	Direction viewDirection = Direction::N;
 
 	void simulate ();
@@ -118,6 +120,7 @@ struct Region
 	// SHARED DATA
 	std::atomic<bool> regionDataGenerated;
 	std::atomic<bool> simulationPaused;
+	std::atomic<unsigned int> simulationDeltaTime;
 
 	struct Chunk_Mesh_Data
 	{
@@ -138,10 +141,12 @@ struct Region
 		
 		std::vector<float> waterVertData;
 		std::vector<unsigned int> waterIndexData;
+		std::vector<unsigned int> waterIndexCount;
 		std::size_t ageIdentifier_water;
 
 		std::vector<float> objectVertData;
 		std::vector<unsigned int> objectIndexData;
+		std::vector<unsigned int> objectIndexCount;
 		std::size_t ageIdentifier_object;
 	};
 	std::atomic<bool> simulationUsingUploadQue_1;

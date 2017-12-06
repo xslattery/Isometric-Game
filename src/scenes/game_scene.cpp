@@ -68,7 +68,7 @@ void Game_Scene::init( const WindowInfo& window )
 	generatingTextMesh.fontsize = 16;
 	create_text_mesh( "Generating region...", generatingTextMesh, packedGlyphTexture, shader );
 
-	region.init( window, 128, 128, 196, 64, 64, 16 );
+	region.init( window, 256, 256, 196, 64, 64, 16 );
 	region.issue_command( Command_Type::GENERATE_REGION_DATA );
 }
 
@@ -77,6 +77,7 @@ void Game_Scene::render ( const WindowInfo& window )
 	create_text_mesh( (
 
 		"DT: " + std::to_string(window.deltaTime) +
+		"\nSDT: " + std::to_string(region.simulationDeltaTime) +
 		"\nDIM: " + std::to_string((int)window.hidpi_width) + "x" + std::to_string((int)window.hidpi_height) +
 		"\nS: " + std::to_string(region.projectionScale) + 
 		"\nL: " + std::to_string(region.length) + " W: " + std::to_string(region.width) + " H: " + std::to_string(region.height) +
@@ -132,7 +133,7 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 	if ( get_key_down( input, Key::Key_P ) )
 		region.simulationPaused = !region.simulationPaused;
 
-	float speed = 1000;
+	float speed = 5000;
 	if ( get_key( input, Key::Key_W ) )
 		region.camera = translate( region.camera, -vec3(0,1,0)*window.deltaTime*speed );
 	if ( get_key( input, Key::Key_S ) )
@@ -154,9 +155,9 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 	if ( get_key( input, Key::Key_E ) )
 		region.viewHeight++;
 
-	if ( get_key_down( input, Key::Key_H ) )
-		region.issue_command( Command_Type::ROTATE_RIGHT );
 	if ( get_key_down( input, Key::Key_J ) )
+		region.issue_command( Command_Type::ROTATE_RIGHT );
+	if ( get_key_down( input, Key::Key_H ) )
 		region.issue_command( Command_Type::ROTATE_LEFT );
 }
 
