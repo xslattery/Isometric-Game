@@ -68,7 +68,7 @@ void Game_Scene::init( const WindowInfo& window )
 	generatingTextMesh.fontsize = 16;
 	create_text_mesh( "Generating region...", generatingTextMesh, packedGlyphTexture, shader );
 
-	region.init( window, 512, 512, 128 );
+	region.init( window, 32, 32, 128 );
 	region.issue_command( Command_Type::GENERATE_REGION_DATA );
 }
 
@@ -151,6 +151,9 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 		region.viewHeight--;
 	if ( get_key( input, Key::Key_E ) )
 		region.viewHeight++;
+
+	if ( get_key_down( input, Key::Key_H ) )
+		region.issue_command( Command_Type::ROTATE_RIGHT );
 }
 
 //////////////////////////////////////

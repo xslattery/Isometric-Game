@@ -53,8 +53,8 @@ enum class Direction
 {
 	NONE = 0,
 	N = 1,
-	S = 2,
-	E = 3,
+	E = 2,
+	S = 3,
 	W = 4
 };
 
@@ -72,6 +72,7 @@ enum class Command_Type
 	GENERATE_REGION_DATA,
 	// LOAD_REGION_DATA,
 	// SAVE_REGION_DATA,
+	ROTATE_RIGHT,
 };
 
 struct Region
@@ -91,6 +92,8 @@ struct Region
 	std::vector<vec3> meshesNeedingUpdate_wall;
 	std::vector<vec3> meshesNeedingUpdate_water;
 	std::vector<vec3> meshesNeedingUpdate_object;
+
+	Direction viewDirection = Direction::N;
 
 	void simulate ();
 	void generate ();

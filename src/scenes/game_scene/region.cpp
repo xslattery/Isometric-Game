@@ -50,6 +50,24 @@ void Region::simulate()
 				// Simulation commands:
 				switch ( com.type )
 				{
+					case Command_Type::ROTATE_RIGHT:
+						viewDirection = static_cast<Direction>( static_cast<int>(viewDirection) - 1 );
+						if ( static_cast<int>(viewDirection) < 1) viewDirection = Direction::W;
+						for ( unsigned int i = 0; i < ceil(height/chunk_height); ++i )
+						{
+							for ( unsigned int j = 0; j < ceil(width/chunk_width); ++j )
+							{
+								for ( unsigned int k = 0; k < ceil(length/chunk_length); ++k )
+								{
+									meshesNeedingUpdate_floor.push_back( vec3(k, j, i) );
+									meshesNeedingUpdate_wall.push_back( vec3(k, j, i) );
+									// meshesNeedingUpdate_water.push_back( vec3(k, j, i) );
+									// meshesNeedingUpdate_object.push_back( vec3(k, j, i) );
+								}
+							}
+						}
+						break;
+
 					default: break;
 				}
 			}
@@ -165,30 +183,60 @@ void Region::build_floor_mesh ()
 					for ( float xx = 0; xx < chunk_length; ++xx )
 					{
 						if ( get_floor(ox+xx, oy+yy, oz+zz) != Floor::NONE )
-						{
-							if ( get_floor(ox+xx-1, oy+yy, oz+zz) == Floor::NONE || get_floor(ox+xx, oy+yy-1, oz+zz) == Floor::NONE || get_wall(ox+xx, oy+yy, oz+zz) == Wall::NONE )
+						{	
+							vec2 pos;
+							float zPos = 0;
+							if ( viewDirection == Direction::N )
 							{
-								unsigned int idxP = verts.size()/5;
-								unsigned int tempIndices [6] =
-								{
-									idxP+0, idxP+1, idxP+2,
-									idxP+2, idxP+1, idxP+3
-								};
-								indices.insert( indices.end(), tempIndices, tempIndices+6 );
+								if ( get_floor(ox+xx-1, oy+yy, oz+zz) != Floor::NONE && get_floor(ox+xx, oy+yy-1, oz+zz) != Floor::NONE && get_wall(ox+xx, oy+yy, oz+zz) != Wall::NONE )
+									continue;
 
-								vec2 pos = ( (xx+ox)*xDir + (yy+oy)*yDir ) * 27;
-								pos += vec2{ 0, 30 } * (zz+oz);
-								float zPos = -(xx+ox + yy+oy) + (zz+oz)*2;
-
-								float tempVerts [20] =
-								{
-									-27.0f+pos.x, 68.0f+pos.y, zPos,		tl.x, tl.y,
-									-27.0f+pos.x,  0.0f+pos.y, zPos,		tl.x, br.y,
-									 27.0f+pos.x, 68.0f+pos.y, zPos,		br.x, tl.y,
-									 27.0f+pos.x,  0.0f+pos.y, zPos,		br.x, br.y,
-								};
-								verts.insert( verts.end(), tempVerts, tempVerts+20 );
+								pos = ( (xx+ox)*xDir + (yy+oy)*yDir ) * 27;
+								zPos = -(xx+ox + yy+oy) + (zz+oz)*2;
 							}
+							else if ( viewDirection == Direction::W )
+							{
+								if ( get_floor(ox+xx-1, oy+yy, oz+zz) != Floor::NONE && get_floor(ox+xx, oy+yy+1, oz+zz) != Floor::NONE && get_wall(ox+xx, oy+yy, oz+zz) != Wall::NONE )
+									continue;
+
+								pos = ( (xx+ox)*yDir + (width-(yy+oy))*xDir ) * 27;
+								zPos = -(xx+ox + width-(yy+oy)) + (zz+oz)*2;	
+							}
+							else if ( viewDirection == Direction::S )
+							{
+								if ( get_floor(ox+xx+1, oy+yy, oz+zz) != Floor::NONE && get_floor(ox+xx, oy+yy+1, oz+zz) != Floor::NONE && get_wall(ox+xx, oy+yy, oz+zz) != Wall::NONE )
+									continue;
+
+								pos = ( (length-(xx+ox))*xDir + (width-(yy+oy))*yDir ) * 27;
+								zPos = -(length-(xx+ox) + width-(yy+oy)) + (zz+oz)*2;
+							}
+							else if ( viewDirection == Direction::E )
+							{
+								if ( get_floor(ox+xx+1, oy+yy, oz+zz) != Floor::NONE && get_floor(ox+xx, oy+yy-1, oz+zz) != Floor::NONE && get_wall(ox+xx, oy+yy, oz+zz) != Wall::NONE )
+									continue;
+
+								pos = ( (length-(xx+ox))*yDir + (yy+oy)*xDir ) * 27;
+								zPos = -(length-(xx+ox) + (yy+oy)) + (zz+oz)*2;
+							}
+							pos += vec2{ 0, 30 } * (zz+oz);
+
+							unsigned int idxP = verts.size()/5;
+							unsigned int tempIndices [6] =
+							{
+								idxP+0, idxP+1, idxP+2,
+								idxP+2, idxP+1, idxP+3
+							};
+							indices.insert( indices.end(), tempIndices, tempIndices+6 );
+
+							float tempVerts [20] =
+							{
+								-27.0f+pos.x, 68.0f+pos.y, zPos,		tl.x, tl.y,
+								-27.0f+pos.x,  0.0f+pos.y, zPos,		tl.x, br.y,
+								 27.0f+pos.x, 68.0f+pos.y, zPos,		br.x, tl.y,
+								 27.0f+pos.x,  0.0f+pos.y, zPos,		br.x, br.y,
+							};
+							verts.insert( verts.end(), tempVerts, tempVerts+20 );
+							
 						}
 					}
 				}
@@ -258,29 +306,58 @@ void Region::build_wall_mesh ()
 					{
 						if ( get_wall(ox+xx, oy+yy, oz+zz) != Wall::NONE )
 						{
-							if ( get_wall(ox+xx-1, oy+yy, oz+zz) == Wall::NONE || get_wall(ox+xx, oy+yy-1, oz+zz) == Wall::NONE || get_floor(ox+xx, oy+yy, oz+zz+1) == Floor::NONE )
+							vec2 pos;
+							float zPos = 0;
+							if ( viewDirection == Direction::N )
 							{
-								unsigned int idxP = verts.size()/5;
-								unsigned int tempIndices [6] =
-								{
-									idxP+0, idxP+1, idxP+2,
-									idxP+2, idxP+1, idxP+3
-								};
-								indices.insert( indices.end(), tempIndices, tempIndices+6 );
+								if ( get_wall(ox+xx-1, oy+yy, oz+zz) != Wall::NONE && get_wall(ox+xx, oy+yy-1, oz+zz) != Wall::NONE && get_floor(ox+xx, oy+yy, oz+zz+1) != Floor::NONE )
+									continue;
 
-								vec2 pos = ( (xx+ox)*xDir + (yy+oy)*yDir ) * 27;
-								pos += vec2{ 0, 30 } * (zz+oz);
-								float zPos = -(xx+ox + yy+oy) + (zz+oz)*2 + 0.1f;
-
-								float tempVerts [20] =
-								{
-									-27.0f+pos.x, 68.0f+pos.y, zPos,		tl.x, tl.y,
-									-27.0f+pos.x,  0.0f+pos.y, zPos,		tl.x, br.y,
-									 27.0f+pos.x, 68.0f+pos.y, zPos,		br.x, tl.y,
-									 27.0f+pos.x,  0.0f+pos.y, zPos,		br.x, br.y,
-								};
-								verts.insert( verts.end(), tempVerts, tempVerts+20 );
+								pos = ( (xx+ox)*xDir + (yy+oy)*yDir ) * 27;
+								zPos = -(xx+ox + yy+oy) + (zz+oz)*2 + 0.1f;
 							}
+							else if ( viewDirection == Direction::W )
+							{
+								if ( get_wall(ox+xx-1, oy+yy, oz+zz) != Wall::NONE && get_wall(ox+xx, oy+yy+1, oz+zz) != Wall::NONE && get_floor(ox+xx, oy+yy, oz+zz+1) != Floor::NONE )
+									continue;
+
+								pos = ( (xx+ox)*yDir + (width-(yy+oy))*xDir ) * 27;
+								zPos = -(xx+ox + width-(yy+oy)) + (zz+oz)*2 + 0.1f;
+							}
+							else if ( viewDirection == Direction::S )
+							{
+								if ( get_wall(ox+xx+1, oy+yy, oz+zz) != Wall::NONE && get_wall(ox+xx, oy+yy+1, oz+zz) != Wall::NONE && get_floor(ox+xx, oy+yy, oz+zz+1) != Floor::NONE )
+									continue;
+
+								pos = ( (length-(xx+ox))*xDir + (width-(yy+oy))*yDir ) * 27;
+								zPos = -(length-(xx+ox) + width-(yy+oy)) + (zz+oz)*2 + 0.1f;
+							}
+							else if ( viewDirection == Direction::E )
+							{
+								if ( get_wall(ox+xx+1, oy+yy, oz+zz) != Wall::NONE && get_wall(ox+xx, oy+yy-1, oz+zz) != Wall::NONE && get_floor(ox+xx, oy+yy, oz+zz+1) != Floor::NONE )
+									continue;
+
+								pos = ( (length-(xx+ox))*yDir + (yy+oy)*xDir ) * 27;
+								zPos = -(length-(xx+ox) + (yy+oy)) + (zz+oz)*2 + 0.1f;
+							}
+							pos += vec2{ 0, 30 } * (zz+oz);
+
+							unsigned int idxP = verts.size()/5;
+							unsigned int tempIndices [6] =
+							{
+								idxP+0, idxP+1, idxP+2,
+								idxP+2, idxP+1, idxP+3
+							};
+							indices.insert( indices.end(), tempIndices, tempIndices+6 );
+
+							float tempVerts [20] =
+							{
+								-27.0f+pos.x, 68.0f+pos.y, zPos,		tl.x, tl.y,
+								-27.0f+pos.x,  0.0f+pos.y, zPos,		tl.x, br.y,
+								 27.0f+pos.x, 68.0f+pos.y, zPos,		br.x, tl.y,
+								 27.0f+pos.x,  0.0f+pos.y, zPos,		br.x, br.y,
+							};
+							verts.insert( verts.end(), tempVerts, tempVerts+20 );
 						}
 					}
 				}
