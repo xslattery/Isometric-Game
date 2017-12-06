@@ -151,12 +151,21 @@ void Region::simulate()
 				yy = w.y;
 				zz = w.z;
 				
-				if ( get_floor( xx, yy, zz ) == Floor::NONE && get_wall( xx, yy, zz-1 ) == Wall::NONE )
+				if ( get_floor( xx, yy, zz ) == Floor::NONE && get_wall( xx, yy, zz-1 ) == Wall::NONE && get_water( xx, yy, zz-1 ) < 4 )
 				{
-					tiles.water[ xx + yy*length + (zz-1)*length*width ] = tiles.water[ xx + yy*length + zz*length*width ];
-					tiles.water[ xx + yy*length + zz*length*width ] = 0;
+					int belowDepth = tiles.water[ xx + yy*length + (zz-1)*length*width ];
+					int aboveDepth = tiles.water[ xx + yy*length + zz*length*width ];
+
+					belowDepth += aboveDepth;
+					aboveDepth = belowDepth - 4;
+					if ( aboveDepth < 0 ) aboveDepth = 0;
+					belowDepth -= aboveDepth;
+
+					tiles.water[ xx + yy*length + (zz-1)*length*width ] = belowDepth;
+					tiles.water[ xx + yy*length + zz*length*width ] = aboveDepth;
 
 					newWaterNeedingUpdate.emplace_back( xx, yy, zz-1 );
+					if ( aboveDepth > 0 ) newWaterNeedingUpdate.emplace_back( xx, yy, zz );
 
 					vec3 insideChunkPosition_new { floor(w.x/chunk_length), floor(w.y/chunk_width), floor((w.z-1)/chunk_height) };
 					vec3 insideChunkPosition_old { floor(w.x/chunk_length), floor(w.y/chunk_width), floor(w.z/chunk_height) };
@@ -239,11 +248,12 @@ void Region::build_floor_mesh ()
 			std::vector<float> verts;
 			std::vector<unsigned int> indices;
 			std::vector<unsigned int> indexCount;
-			float ox = p.x * chunk_length;
-			float oy = p.y * chunk_width;
-			float oz = p.z * chunk_height;
-			vec2 xDir { -1, 18.0f/27.0f };
-			vec2 yDir {  1, 18.0f/27.0f };
+
+			const float ox = p.x * chunk_length;
+			const float oy = p.y * chunk_width;
+			const float oz = p.z * chunk_height;
+			const vec2 xDir { -1, 18.0f/27.0f };
+			const vec2 yDir {  1, 18.0f/27.0f };
 
 			vec2 tl { 0, 			1.0f-1.0f/512*68*2 };
 			vec2 br { 1.0f/512*54, 	1.0f-1.0f/512*68 };
@@ -361,11 +371,12 @@ void Region::build_wall_mesh ()
 			std::vector<float> verts;
 			std::vector<unsigned int> indices;
 			std::vector<unsigned int> indexCount;
-			float ox = p.x * chunk_length;
-			float oy = p.y * chunk_width;
-			float oz = p.z * chunk_height;
-			vec2 xDir { -1, 18.0f/27.0f };
-			vec2 yDir {  1, 18.0f/27.0f };
+			
+			const float ox = p.x * chunk_length;
+			const float oy = p.y * chunk_width;
+			const float oz = p.z * chunk_height;
+			const vec2 xDir { -1, 18.0f/27.0f };
+			const vec2 yDir {  1, 18.0f/27.0f };
 
 			vec2 tl { 0, 			1.0f-1.0f/512*68 };
 			vec2 br { 1.0f/512*54, 	1.0f };
@@ -482,11 +493,16 @@ void Region::build_water_mesh ()
 			std::vector<float> verts;
 			std::vector<unsigned int> indices;
 			std::vector<unsigned int> indexCount;
-			float ox = p.x * chunk_length;
-			float oy = p.y * chunk_width;
-			float oz = p.z * chunk_height;
-			vec2 xDir { -1, 18.0f/27.0f };
-			vec2 yDir {  1, 18.0f/27.0f };
+
+			// verts.reserve( chunk_length*chunk_width*chunk_height * 20 );
+			// indices.reserve( chunk_length*chunk_width*chunk_height * 6 );
+			// indexCount.reserve( chunk_height );
+
+			const float ox = p.x * chunk_length;
+			const float oy = p.y * chunk_width;
+			const float oz = p.z * chunk_height;
+			const vec2 xDir { -1, 18.0f/27.0f };
+			const vec2 yDir {  1, 18.0f/27.0f };
 
 			for ( float zz = 0; zz < chunk_height; ++zz )
 			{
@@ -497,8 +513,7 @@ void Region::build_water_mesh ()
 						auto waterLevel = get_water(ox+xx, oy+yy, oz+zz);
 						if ( waterLevel > 0 && waterLevel < 5 )
 						{
-							vec2 tl;
-							vec2 br;
+							vec2 tl, br;
 							if ( waterLevel == 1 )
 							{
 								tl = { 0, 			1.0f-1.0f/512*68*3 };
@@ -519,6 +534,9 @@ void Region::build_water_mesh ()
 								tl = { 1.0f/512*54*3, 	1.0f-1.0f/512*68*3 };
 								br = { 1.0f/512*54*4,	1.0f-1.0f/512*68*2 };
 							}
+
+							// TODO(Xavier): (2017.12.7)
+							// For correctness checking against sdjacent water also needs to be done.
 
 							vec2 pos;
 							float zPos = 0;
@@ -572,11 +590,40 @@ void Region::build_water_mesh ()
 								 27.0f+pos.x,  0.0f+pos.y, zPos,		br.x, br.y,
 							};
 							verts.insert( verts.end(), tempVerts, tempVerts+20 );
+
+							// TODO(Xavier): (2017.12.7)
+							// For correctness testing against adjacent floors needs to be done.
+							if ( get_floor( ox+xx, oy+yy, oz+zz ) == Floor::NONE )
+							{
+								tl = { 0, 			1.0f-1.0f/512*68*4 };
+								br = { 1.0f/512*54,	1.0f-1.0f/512*68*3 };
+
+								unsigned int idxP = verts.size()/5;
+								unsigned int tempIndices [6] =
+								{
+									idxP+0, idxP+1, idxP+2,
+									idxP+2, idxP+1, idxP+3
+								};
+								indices.insert( indices.end(), tempIndices, tempIndices+6 );
+
+								float tempVerts [20] =
+								{
+									-27.0f+pos.x, 68.0f+pos.y, zPos,		tl.x, tl.y,
+									-27.0f+pos.x,  0.0f+pos.y, zPos,		tl.x, br.y,
+									 27.0f+pos.x, 68.0f+pos.y, zPos,		br.x, tl.y,
+									 27.0f+pos.x,  0.0f+pos.y, zPos,		br.x, br.y,
+								};
+								verts.insert( verts.end(), tempVerts, tempVerts+20 );
+							}
 						}
 					}
 				}
 				indexCount.push_back( indices.size() );
 			}
+
+			// verts.shrink_to_fit();
+			// indices.shrink_to_fit();
+			// indexCount.shrink_to_fit();
 
 			// Pass to shared mesh data ...
 			if ( renderingUsingUploadQue_2 == false )

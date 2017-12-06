@@ -68,7 +68,7 @@ void Game_Scene::init( const WindowInfo& window )
 	generatingTextMesh.fontsize = 16;
 	create_text_mesh( "Generating region...", generatingTextMesh, packedGlyphTexture, shader );
 
-	region.init( window, 256, 256, 196, 64, 64, 16 );
+	region.init( window, 64, 64, 196, 64, 64, 4 );
 	region.issue_command( Command_Type::GENERATE_REGION_DATA );
 }
 
@@ -76,8 +76,8 @@ void Game_Scene::render ( const WindowInfo& window )
 {
 	create_text_mesh( (
 
-		"DT: " + std::to_string(window.deltaTime) +
-		"\nSDT: " + std::to_string(region.simulationDeltaTime) +
+		"DT: " + std::to_string(window.deltaTime) + "s" +
+		"\nSDT: " + std::to_string(region.simulationDeltaTime) + "us" +
 		"\nDIM: " + std::to_string((int)window.hidpi_width) + "x" + std::to_string((int)window.hidpi_height) +
 		"\nS: " + std::to_string(region.projectionScale) + 
 		"\nL: " + std::to_string(region.length) + " W: " + std::to_string(region.width) + " H: " + std::to_string(region.height) +
