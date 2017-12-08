@@ -68,7 +68,7 @@ void Game_Scene::init( const WindowInfo& window )
 	generatingTextMesh.fontsize = 16;
 	create_text_mesh( "Generating region...", generatingTextMesh, packedGlyphTexture, shader );
 
-	region_init( window, &region, 64, 64, 16, 2, 2, 12 );
+	region_init( window, &region, 64, 64, 16, 4, 4, 12 );
 	region_issue_command( &region, {Region_Command_Type::GENERATE_DATA} );
 }
 

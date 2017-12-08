@@ -8,6 +8,14 @@
 #include "../../platform/opengl.hpp"
 #include "../../math.hpp"
 
+enum Occlusion
+{
+	N_HIDDEN = 0x1 << 31,
+	E_HIDDEN = 0x1 << 30,
+	S_HIDDEN = 0x1 << 29,
+	W_HIDDEN = 0x1 << 28,
+};
+
 enum Direction
 {
 	D_NONE = 0,

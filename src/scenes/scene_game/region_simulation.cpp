@@ -49,6 +49,7 @@ static float generate_height_data ( float xx, float yy, float scale, int octaves
 
 void region_generate ( Region *region )
 {
+	// Generate Data:
 	for ( int z = 0; z < region->height; ++z )
 	{
 		for ( int y = 0; y < region->width; ++y )
@@ -76,6 +77,61 @@ void region_generate ( Region *region )
 							if ( genHeight-1 > cz+(z*region->chunkHeight) ) *wall = Wall::WALL_STONE;
 							
 							if ( cz+(z*region->chunkHeight) == region->height*region->chunkHeight-1 ) *water = rand()%5;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Generate Occlusion:
+	for ( int z = 0; z < region->height; ++z )
+	{
+		for ( int y = 0; y < region->width; ++y )
+		{
+			for ( int x = 0; x < region->length; ++x )
+			{
+				Chunk_Data *chunk = region_get_chunk( region, x, y, z );
+
+				for ( int cz = 0; cz < region->chunkHeight; ++cz )
+				{
+					for ( int cy = 0; cy < region->chunkWidth; ++cy )
+					{
+						for ( int cx = 0; cx < region->chunkLength; ++cx )
+						{
+							unsigned int* floor = &chunk->floor[ cx + cy*region->chunkLength + cz*region->chunkLength*region->chunkWidth ];
+							unsigned int* wall = &chunk->wall[ cx + cy*region->chunkLength + cz*region->chunkLength*region->chunkWidth ];
+							unsigned int* water = &chunk->water[ cx + cy*region->chunkLength + cz*region->chunkLength*region->chunkWidth ];
+							
+							int xx = cx+(x*region->chunkLength);
+							int yy = cy+(y*region->chunkWidth);
+							int zz = cz+(z*region->chunkHeight);
+
+							if ( *floor != Floor::FLOOR_NONE )
+							{
+								if ( region_get_floor(region, xx-1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy-1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE )
+									*floor |= Occlusion::N_HIDDEN;
+								if ( region_get_floor(region, xx+1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy-1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE )
+									*floor |= Occlusion::E_HIDDEN;
+								if ( region_get_floor(region, xx+1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy+1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE )
+									*floor |= Occlusion::S_HIDDEN;
+								if ( region_get_floor(region, xx-1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy+1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE )
+									*floor |= Occlusion::W_HIDDEN;
+							}
+
+							if ( *wall != Wall::WALL_NONE )
+							{
+								if ( region_get_wall(region, xx-1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy-1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE )
+									*wall |= Occlusion::N_HIDDEN;
+								if ( region_get_wall(region, xx+1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy-1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE )
+									*wall |= Occlusion::E_HIDDEN;
+								if ( region_get_wall(region, xx+1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy+1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE )
+									*wall |= Occlusion::S_HIDDEN;
+								if ( region_get_wall(region, xx-1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy+1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE )
+									*wall |= Occlusion::W_HIDDEN;
+							}
+
+							*water |= 0;
 						}
 					}
 				}
@@ -126,13 +182,25 @@ static void process_commands ( Region *region )
 				break;
 
 			case Region_Command_Type::ROTATE_LEFT:
-				// TODO(Xavier): (2017.12.7)
-				// Handle the command.
+				region->viewDirection++;
+				if ( region->viewDirection > 4 ) region->viewDirection = 1;
+				region->chunksNeedingMeshUpdate_mutex.lock();
+				for ( unsigned int i = 0; i < region->length*region->width*region->height; ++i )
+				{
+					region->chunksNeedingMeshUpdate[i] = Chunk_Mesh_Data_Type::FLOOR | Chunk_Mesh_Data_Type::WALL | Chunk_Mesh_Data_Type::WATER;
+				}
+				region->chunksNeedingMeshUpdate_mutex.unlock();
 				break;
 
 			case Region_Command_Type::ROTATE_RIGHT:
-				// TODO(Xavier): (2017.12.7)
-				// Handle the command.
+				region->viewDirection--;
+				if ( region->viewDirection < 1 ) region->viewDirection = 4;	
+				region->chunksNeedingMeshUpdate_mutex.lock();
+				for ( unsigned int i = 0; i < region->length*region->width*region->height; ++i )
+				{
+					region->chunksNeedingMeshUpdate[i] = Chunk_Mesh_Data_Type::FLOOR | Chunk_Mesh_Data_Type::WALL | Chunk_Mesh_Data_Type::WATER;
+				}
+				region->chunksNeedingMeshUpdate_mutex.unlock();
 				break;
 
 			default: break;
