@@ -4,7 +4,7 @@
 #include "../shader.hpp"
 #include "../scenemanager.hpp"
 
-#include "game_scene.hpp"
+#include "scene_game.hpp"
 
 //////////////////////////////////////
 // Main Thread - Methods & Data:
@@ -68,8 +68,8 @@ void Game_Scene::init( const WindowInfo& window )
 	generatingTextMesh.fontsize = 16;
 	create_text_mesh( "Generating region...", generatingTextMesh, packedGlyphTexture, shader );
 
-	region.init( window, 64, 64, 196, 64, 64, 4 );
-	region.issue_command( Command_Type::GENERATE_REGION_DATA );
+	region_init( window, &region, 64, 64, 16, 2, 2, 12 );
+	region_issue_command( &region, {Region_Command_Type::GENERATE_DATA} );
 }
 
 void Game_Scene::render ( const WindowInfo& window )
@@ -81,12 +81,12 @@ void Game_Scene::render ( const WindowInfo& window )
 		"\nDIM: " + std::to_string((int)window.hidpi_width) + "x" + std::to_string((int)window.hidpi_height) +
 		"\nS: " + std::to_string(region.projectionScale) + 
 		"\nL: " + std::to_string(region.length) + " W: " + std::to_string(region.width) + " H: " + std::to_string(region.height) +
-		"\nCL: " + std::to_string((int)region.chunk_length) + " CW: " + std::to_string((int)region.chunk_width) + " CH: " + std::to_string((int)region.chunk_height)
+		"\nCL: " + std::to_string((int)region.chunkLength) + " CW: " + std::to_string((int)region.chunkWidth) + " CH: " + std::to_string((int)region.chunkHeight)
 		
 		).c_str(), textMesh, packedGlyphTexture, shader );
 
 	static bool callOnce_0 = true;
-	if ( region.regionDataGenerated && callOnce_0 )
+	if ( region.chunkDataGenerated && callOnce_0 )
 	{
 		callOnce_0 = false;
 		create_text_mesh( "Done.", generatingTextMesh, packedGlyphTexture, shader );
@@ -107,7 +107,7 @@ void Game_Scene::render ( const WindowInfo& window )
 
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); GLCALL;
 
-	region.render();
+	region_render( window, &region );
 
 	glClear( GL_DEPTH_BUFFER_BIT ); GLCALL;
 
@@ -122,7 +122,7 @@ void Game_Scene::resize ( const WindowInfo& window )
 {
 	projection = orthographic_projection( window.height, 0, 0, window.width, 0.1f, 100.0f );
 
-	region.resize( window );
+	region_resize_viewport( window, &region );
 }
 
 void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
@@ -156,16 +156,16 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 		region.viewHeight++;
 
 	if ( get_key_down( input, Key::Key_J ) )
-		region.issue_command( Command_Type::ROTATE_RIGHT );
+		region_issue_command( &region, {Region_Command_Type::ROTATE_RIGHT} );
 	if ( get_key_down( input, Key::Key_H ) )
-		region.issue_command( Command_Type::ROTATE_LEFT );
+		region_issue_command( &region, {Region_Command_Type::ROTATE_LEFT} );
 }
 
 //////////////////////////////////////
 // Logic Thread - Methods & Data:
 void Game_Scene::simulate ()
 {
-	region.simulate();
+	region_simulate( &region );
 }
 
 //////////////////////////////////////
@@ -174,5 +174,5 @@ Game_Scene::~Game_Scene ()
 {
 	delete_shader( shader );
 
-	region.cleanup();
+	region_cleanup( &region );
 }

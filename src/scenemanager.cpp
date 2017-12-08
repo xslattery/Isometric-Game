@@ -1,7 +1,7 @@
 
 #include "scenemanager.hpp"
-#include "scenes/mainmenu_scene.hpp"
-#include "scenes/game_scene.hpp"
+#include "scenes/scene_mainmenu.hpp"
+#include "scenes/scene_game.hpp"
 
 
 ///////////////////////////

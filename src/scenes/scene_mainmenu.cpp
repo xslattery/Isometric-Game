@@ -4,7 +4,7 @@
 #include "../shader.hpp"
 #include "../scenemanager.hpp"
 
-#include "mainmenu_scene.hpp"
+#include "scene_mainmenu.hpp"
 
 //////////////////////////////////////
 // Main Thread - Methods & Data:
