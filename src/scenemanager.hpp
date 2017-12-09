@@ -22,10 +22,11 @@ class Scene_Manager
 public:
 	// Shared Data:
 	static Scene *mainScene;
-	static Scene *activeScene; // IF nullprt mainScene as the acive scene is implied.
-	static std::atomic<bool> shouldUpdate;
-	static std::atomic<bool> stoppedUpdating;
-	static std::atomic<int> updateRate;
+	static Scene *activeScene; // If nullprt mainScene is implied to be the acive scene.
+	static std::atomic<bool> simulationShouldUpdate;
+	static std::atomic<bool> simulationStoppedUpdating;
+	static std::atomic<bool> generationShouldUpdate;
+	static std::atomic<bool> generationStoppedUpdating;
 
 	////////////////////////////////////////////////////////////
 	// Main Thread Methods:
@@ -38,14 +39,19 @@ public:
 	////////////////////////////////////////////////////////////
 	// Shared Methods:
 	static void change_scene ( SceneType scene, const WindowInfo& window );
-	static bool is_updating ();
+	static bool is_simulation_updating ();
+	static bool is_generation_updating ();
 	static void disable_updating ();
 	static void enable_updating ();
 	static void set_update_rate ( const int& rate );
 
 	////////////////////////////////////////////////////////////
-	// Logic Thread Methods:
+	// Simulation Thread Methods:
 	static void simulate_scene ();
+
+	////////////////////////////////////////////////////////////
+	// Generation Thread Methods:
+	static bool generate_scene ();
 
 };
 

@@ -7,15 +7,19 @@ class Scene
 {
 public:
 	/////////////////////////////////
-	// Main Thread Methods & Data:
+	// Main Thread Methods:
 	virtual void init( const WindowInfo& window ) = 0;
 	virtual void render( const WindowInfo& window ) = 0;
 	virtual void resize ( const WindowInfo& window ) = 0;
 	virtual void input( const WindowInfo& window, InputInfo* input ) = 0;
 
 	//////////////////////////////////
-	// Logic Thread Methods & Data:
+	// Simulation Thread Methods:
 	virtual void simulate() = 0;
+
+	//////////////////////////////////
+	// Generation Thread Methods:
+	virtual bool generate() = 0;
 
 	/////////////////
 	// Destructor:

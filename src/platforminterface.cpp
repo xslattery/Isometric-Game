@@ -13,7 +13,7 @@
 
 ///////////////////////////////////
 // Simulation Threaad:
-static std::atomic<bool> terminateSimulationThread;
+static std::atomic_bool terminateSimulationThread;
 static void simulation_thread_entry ()
 {
 	// NOTE(Xavier): (2017.12.5)
@@ -49,13 +49,59 @@ static void simulation_thread_entry ()
 		std::this_thread::sleep_for( std::chrono::milliseconds(simTime-delta) );
 	}
 
-	Scene_Manager::stoppedUpdating = true;
+	Scene_Manager::simulationStoppedUpdating = true;
 	
 	#if DEBUG
-		std::cout << "Exited Logic Thread." << std::endl;
+		std::cout << "Exited Simulation Thread." << std::endl;
 	#endif
 }
 
+///////////////////////////////////
+// Generation Threaad:
+static std::atomic_bool terminateGenerationThread;
+static void generation_thread_entry ()
+{
+	// NOTE(Xavier): (2017.12.5)
+	// This needs to be made crossplatform.
+	#ifdef PLATFORM_OSX
+		mach_timebase_info_data_t timingInfoGeneration;
+		if ( mach_timebase_info (&timingInfoGeneration) != KERN_SUCCESS )
+			printf ("ERROR: mach_timebase_info failed\n");
+		std::size_t startTime;
+	#endif
+
+	unsigned int genTime = 10;
+	bool dontWait = false;
+
+	std::size_t delta = 0;
+	while ( !terminateGenerationThread )
+	{
+		#ifdef PLATFORM_OSX
+			startTime = mach_absolute_time();
+		#endif
+		
+		if ( Scene_Manager::generate_scene() ) dontWait = true;
+		else dontWait = false;
+	
+		#ifdef PLATFORM_OSX
+			std::size_t endTime = mach_absolute_time();
+			std::size_t elapsedTime = endTime - startTime;
+			delta = (elapsedTime * timingInfoGeneration.numer / timingInfoGeneration.denom) / 1000000;
+			if (delta > genTime) delta = genTime;
+			// NOTE(Xavier): (2017.12.5)
+			// The precission here could be improved to microseconds or better.
+			// Instead of milliseconds.
+		#endif
+		
+		if ( dontWait == false ) std::this_thread::sleep_for( std::chrono::milliseconds(genTime-delta) );
+	}
+
+	Scene_Manager::generationStoppedUpdating = true;
+	
+	#if DEBUG
+		std::cout << "Exited Generation Thread." << std::endl;
+	#endif
+}
 
 //////////////////////////////
 // Main Thread:
@@ -82,8 +128,13 @@ void init ( const WindowInfo& window )
 	Scene_Manager::init( window );
 
 	// Begin the simulation thread:
+	terminateSimulationThread = false;
 	std::thread simulationThread = std::thread( simulation_thread_entry );
 	simulationThread.detach();
+	
+	terminateGenerationThread = false;
+	std::thread generationThread = std::thread( generation_thread_entry );
+	generationThread.detach();
 }
 
 void input_and_render ( const WindowInfo& window, InputInfo *input )
@@ -107,5 +158,6 @@ void resize ( const WindowInfo& window )
 void cleanup ( const WindowInfo& window )
 {
 	terminateSimulationThread = true;
+	terminateGenerationThread = true;
 	Scene_Manager::exit();
 }

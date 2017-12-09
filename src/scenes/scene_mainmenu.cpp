@@ -4,10 +4,10 @@
 #include "../shader.hpp"
 #include "../scenemanager.hpp"
 
-#include "mainmenu_scene.hpp"
+#include "scene_mainmenu.hpp"
 
 //////////////////////////////////////
-// Main Thread - Methods & Data:
+// Main Thread - Methods:
 void MainMenu_Scene::init( const WindowInfo& window )
 {
 	shader = load_shader(
@@ -90,10 +90,18 @@ void MainMenu_Scene::input( const WindowInfo& window, InputInfo* input )
 }
 
 //////////////////////////////////////
-// Logic Thread - Methods & Data:
+// Simulation Thread - Methods:
 void MainMenu_Scene::simulate()
 {
 	// This will never be called ( idealy ).
+}
+
+//////////////////////////////////////
+// Generation Thread - Methods:
+bool MainMenu_Scene::generate()
+{
+	// This will never be called ( idealy ).
+	return false;
 }
 
 //////////////////////////////////////
