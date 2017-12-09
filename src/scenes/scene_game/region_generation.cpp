@@ -1,36 +1,59 @@
 
 #include "region.hpp"
+#ifdef PLATFORM_OSX
+#include <mach/mach_time.h>
+#endif
 
 static void build_floor_mesh( Region *region, unsigned int chunk );
 static void build_wall_mesh( Region *region, unsigned int chunk );
 static void build_water_mesh( Region *region, unsigned int chunk );
 
-void region_build_new_meshes ( Region *region )
+bool region_build_new_meshes ( Region *region )
 {
-	unsigned int chunkToBeUpdated = 0;
-	unsigned int chunkToBeUpdatedInfo = 0;
-	
-	region->chunksNeedingMeshUpdate_mutex.lock();
-	
-	for ( unsigned int i = 0; i < region->length*region->width*region->height; ++i )
+	bool didWork = false;
+	if ( region->chunkDataGenerated )
 	{
-		if ( region->chunksNeedingMeshUpdate[i] != 0 )
+		unsigned int chunkToBeUpdated = 0;
+		unsigned int chunkToBeUpdatedInfo = 0;
+		
+		region->chunksNeedingMeshUpdate_mutex.lock();
+		
+		for ( unsigned int i = 0; i < region->length*region->width*region->height; ++i )
 		{
-			chunkToBeUpdated = i;
-			chunkToBeUpdatedInfo = region->chunksNeedingMeshUpdate[i];
-			region->chunksNeedingMeshUpdate[i] = 0;
-			break;
+			if ( region->chunksNeedingMeshUpdate[i] != 0 )
+			{
+				chunkToBeUpdated = i;
+				chunkToBeUpdatedInfo = region->chunksNeedingMeshUpdate[i];
+				region->chunksNeedingMeshUpdate[i] = 0;
+				break;
+			}
+		}
+		
+		region->chunksNeedingMeshUpdate_mutex.unlock();
+
+		if ( chunkToBeUpdatedInfo != 0 )
+		{
+			if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::FLOOR ) build_floor_mesh( region, chunkToBeUpdated );
+			if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::WALL ) build_wall_mesh( region, chunkToBeUpdated );
+			if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::WATER ) build_water_mesh( region, chunkToBeUpdated );
+
+			didWork = true;
 		}
 	}
-	
-	region->chunksNeedingMeshUpdate_mutex.unlock();
 
-	if ( chunkToBeUpdatedInfo != 0 )
-	{
-		if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::FLOOR ) build_floor_mesh( region, chunkToBeUpdated );
-		if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::WALL ) build_wall_mesh( region, chunkToBeUpdated );
-		if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::WATER ) build_water_mesh( region, chunkToBeUpdated );
-	}
+#ifdef PLATFORM_OSX
+	mach_timebase_info_data_t timingInfoSimulation;
+	if ( mach_timebase_info (&timingInfoSimulation) != KERN_SUCCESS )
+		printf ("ERROR: mach_timebase_info failed\n");
+
+	static std::size_t startTime;
+	std::size_t endTime = mach_absolute_time();
+	std::size_t elapsedTime = endTime - startTime;
+	startTime = mach_absolute_time();
+	region->generationDeltaTime = (elapsedTime * timingInfoSimulation.numer / timingInfoSimulation.denom) / 1000;
+#endif
+
+	return didWork;
 }
 
 static void build_floor_mesh( Region *region, unsigned int chunk )

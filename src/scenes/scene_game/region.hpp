@@ -126,6 +126,7 @@ struct Region
 	// MAIN & SIMULATION THREADS:
 	std::atomic_bool simulationPaused;
 	std::atomic<unsigned int> simulationDeltaTime;
+	std::atomic<unsigned int> generationDeltaTime;
 	std::atomic_bool chunkDataGenerated;
 
 	std::atomic<unsigned int> viewDirection;
@@ -153,7 +154,7 @@ struct Region
 
 ///////////////////
 // EXTRA THREADS:
-void region_build_new_meshes ( Region *region );
+bool region_build_new_meshes ( Region *region );
 
 ///////////////////////
 // SIMULATION THREAD:

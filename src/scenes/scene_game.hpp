@@ -30,8 +30,12 @@ public:
 	void input( const WindowInfo& window, InputInfo* input ) override;
 
 	////////////////////////////
-	// Logic Thread Methods:
+	// Simulation Thread Methods:
 	void simulate() override;
+
+	////////////////////////////
+	// Generation Thread Methods:
+	bool generate() override;
 
 	////////////////
 	// Destructor:

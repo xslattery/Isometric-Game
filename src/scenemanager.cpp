@@ -23,9 +23,10 @@ Scene* load_game_scene( const WindowInfo& window )
 
 Scene *Scene_Manager::mainScene = nullptr;
 Scene *Scene_Manager::activeScene = nullptr;
-std::atomic<bool> Scene_Manager::shouldUpdate;
-std::atomic<bool> Scene_Manager::stoppedUpdating;
-std::atomic<int> Scene_Manager::updateRate;
+std::atomic<bool> Scene_Manager::simulationShouldUpdate;
+std::atomic<bool> Scene_Manager::simulationStoppedUpdating;
+std::atomic<bool> Scene_Manager::generationShouldUpdate;
+std::atomic<bool> Scene_Manager::generationStoppedUpdating;
 
 
 /////////////////////////////////
@@ -34,15 +35,17 @@ void Scene_Manager::init( const WindowInfo& window )
 {
 	// Load the main scene:
 	mainScene = load_main_scene( window );
-	shouldUpdate = false;
-	stoppedUpdating = false;
-	updateRate = 0;
+	simulationShouldUpdate = false;
+	generationShouldUpdate = false;
+	simulationStoppedUpdating = false;
+	generationStoppedUpdating = false;
 }
 
 void Scene_Manager::exit()
 {
 	disable_updating();
-	while ( !stoppedUpdating ); // Wait until the scene is no longer being updated.
+	while ( !simulationStoppedUpdating ); // Wait until the scene is no longer being simulated.
+	while ( !generationStoppedUpdating ); // Wait until the scene is no longer being generated.
 	
 	// Cleanup and release all data:
 	if ( activeScene != nullptr ) delete activeScene;
@@ -90,7 +93,8 @@ void Scene_Manager::input_scene( const WindowInfo& window, InputInfo* input )
 void Scene_Manager::change_scene( SceneType scene, const WindowInfo& window )
 {
 	disable_updating();
-	while ( !stoppedUpdating ); // Wait until the scene is no longer being updated.
+	while ( !simulationStoppedUpdating ); // Wait until the scene is no longer being simulated.
+	while ( !generationStoppedUpdating ); // Wait until the scene is no longer being generated.
 	
 	if ( activeScene != nullptr ) delete activeScene;
 	activeScene = nullptr;
@@ -99,24 +103,23 @@ void Scene_Manager::change_scene( SceneType scene, const WindowInfo& window )
 	else if ( scene == SceneType::Game )
 	{
 		activeScene = load_game_scene( window );
-		shouldUpdate = true;
-		updateRate = 1;
+		simulationShouldUpdate = true;
+		generationShouldUpdate = true;
 	}
 }
 
-bool Scene_Manager::is_updating () { return shouldUpdate; }
-void Scene_Manager::disable_updating () { shouldUpdate = false; }	
-void Scene_Manager::enable_updating () { shouldUpdate = true; }
-void Scene_Manager::set_update_rate ( const int& rate ) { updateRate = rate; }
-
+bool Scene_Manager::is_simulation_updating () { return simulationShouldUpdate; }
+bool Scene_Manager::is_generation_updating () { return generationShouldUpdate; }
+void Scene_Manager::disable_updating () { simulationShouldUpdate = false; generationShouldUpdate = false; }	
+void Scene_Manager::enable_updating () { simulationShouldUpdate = true; generationShouldUpdate = true; }
 
 ///////////////////////////////////////
-// Logic Thread Methods & Data:
+// Simulation Thread:
 void Scene_Manager::simulate_scene()
 {
-	if ( shouldUpdate )
+	if ( simulationShouldUpdate )
 	{
-		stoppedUpdating = false;
+		simulationStoppedUpdating = false;
 		if ( activeScene != nullptr ) { activeScene->simulate(); }
 		else
 		{
@@ -127,6 +130,26 @@ void Scene_Manager::simulate_scene()
 	}
 	else
 	{
-		stoppedUpdating = true;
+		simulationStoppedUpdating = true;
 	}
+}
+
+///////////////////////////////////////
+// Generation Thread:
+bool Scene_Manager::generate_scene()
+{
+	if ( generationShouldUpdate )
+	{
+		generationStoppedUpdating = false;
+		if ( activeScene != nullptr )
+		{ 
+			return activeScene->generate();
+		}
+	}
+	else
+	{
+		generationStoppedUpdating = true;
+	}
+
+	return false;
 }

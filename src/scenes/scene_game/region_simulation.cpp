@@ -1,8 +1,8 @@
 
+#include "region.hpp"
 #ifdef PLATFORM_OSX
 #include <mach/mach_time.h>
 #endif
-#include "region.hpp"
 #include <cmath>
 
 #include "../../perlin.hpp"
@@ -244,7 +244,7 @@ void region_simulate ( Region *region )
 
 		// NOTE(Xavier): (2017.12.8)
 		// This Should me moved to its own thread.
-		region_build_new_meshes( region );
+		// region_build_new_meshes( region );
 	}
 
 #ifdef PLATFORM_OSX

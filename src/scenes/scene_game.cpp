@@ -7,7 +7,7 @@
 #include "scene_game.hpp"
 
 //////////////////////////////////////
-// Main Thread - Methods & Data:
+// Main Thread - Methods:
 void Game_Scene::init( const WindowInfo& window )
 {
 	shader = load_shader(
@@ -78,6 +78,7 @@ void Game_Scene::render ( const WindowInfo& window )
 
 		"DT: " + std::to_string(window.deltaTime) + "s" +
 		"\nSDT: " + std::to_string(region.simulationDeltaTime) + "us" +
+		"\nGDT: " + std::to_string(region.generationDeltaTime) + "us" +
 		"\nDIM: " + std::to_string((int)window.hidpi_width) + "x" + std::to_string((int)window.hidpi_height) +
 		"\nS: " + std::to_string(region.projectionScale) + 
 		"\nL: " + std::to_string(region.length) + " W: " + std::to_string(region.width) + " H: " + std::to_string(region.height) +
@@ -162,10 +163,17 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 }
 
 //////////////////////////////////////
-// Logic Thread - Methods & Data:
+// Simulation Thread - Methods:
 void Game_Scene::simulate ()
 {
 	region_simulate( &region );
+}
+
+//////////////////////////////////////
+// Generation Thread - Methods:
+bool Game_Scene::generate ()
+{
+	return region_build_new_meshes( &region );
 }
 
 //////////////////////////////////////
