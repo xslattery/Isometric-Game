@@ -240,6 +240,35 @@ void region_simulate ( Region *region )
 		{
 			// TODO(Xavier): (2017.12.7)
 			// Implement the simulation here.
+			
+			std::vector<unsigned int> newChunksThatNeedUpdate( region->length*region->width*region->height, 0 );
+			
+			for ( unsigned int i = 0; i < 100; ++i )
+			{
+				unsigned int x = rand()%( region->length*region->chunkLength );
+				unsigned int y = rand()%( region->width*region->chunkWidth );
+				unsigned int z = rand()%( region->height*region->chunkHeight );
+				
+				unsigned int cx = x / region->chunkLength;
+				unsigned int cy = y / region->chunkWidth;
+				unsigned int cz = z / region->chunkHeight;
+				region_set_floor( region, x, y, z+1, 0 );
+				newChunksThatNeedUpdate[ cx + cy*region->length + cz*region->length*region->width ] |= Chunk_Mesh_Data_Type::FLOOR;
+				
+				cx = x / region->chunkLength;
+				cy = y / region->chunkWidth;
+				cz = z / region->chunkHeight;
+				region_set_wall( region, x, y, z, 0 );
+				newChunksThatNeedUpdate[ cx + cy*region->length + cz*region->length*region->width ] |= Chunk_Mesh_Data_Type::WALL;
+			}
+
+			region->chunksNeedingMeshUpdate_mutex.lock();
+			for ( unsigned int i = 0; i < newChunksThatNeedUpdate.size(); ++i )
+			{
+				region->chunksNeedingMeshUpdate[ i ] |= newChunksThatNeedUpdate[i];
+			}
+			region->chunksNeedingMeshUpdate_mutex.unlock();
+
 		}
 
 		// NOTE(Xavier): (2017.12.8)
@@ -306,6 +335,7 @@ inline unsigned int region_get_water ( Region *region, int x, int y, int z )
 
 inline void region_set_floor ( Region *region, int x, int y, int z, unsigned int floor )
 {
+	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return;
 	unsigned int cx = x / region->chunkLength;
 	unsigned int cy = y / region->chunkWidth;
 	unsigned int cz = z / region->chunkHeight;
@@ -317,6 +347,7 @@ inline void region_set_floor ( Region *region, int x, int y, int z, unsigned int
 
 inline void region_set_wall ( Region *region, int x, int y, int z, unsigned int wall )
 {
+	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return;
 	unsigned int cx = x / region->chunkLength;
 	unsigned int cy = y / region->chunkWidth;
 	unsigned int cz = z / region->chunkHeight;
@@ -328,6 +359,7 @@ inline void region_set_wall ( Region *region, int x, int y, int z, unsigned int 
 
 inline void region_set_water ( Region *region, int x, int y, int z, unsigned int water )
 {
+	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return;
 	unsigned int cx = x / region->chunkLength;
 	unsigned int cy = y / region->chunkWidth;
 	unsigned int cz = z / region->chunkHeight;

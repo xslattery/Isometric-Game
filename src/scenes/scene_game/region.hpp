@@ -119,11 +119,13 @@ struct Region
 	std::mutex chunksNeedingMeshUpdate_mutex;
 	unsigned int *chunksNeedingMeshUpdate = nullptr;
 
+	// GENERATION THREAD:
 	std::atomic<unsigned int> ageIncrementerFloor;
 	std::atomic<unsigned int> ageIncrementerWall;
 	std::atomic<unsigned int> ageIncrementerWater;
+	std::atomic<unsigned int> generationNextChunk;
 
-	// MAIN & SIMULATION THREADS:
+	// MAIN, SIMULATION & GENERATION THREADS:
 	std::atomic_bool simulationPaused;
 	std::atomic<unsigned int> simulationDeltaTime;
 	std::atomic<unsigned int> generationDeltaTime;

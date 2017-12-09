@@ -18,10 +18,13 @@ bool region_build_new_meshes ( Region *region )
 		
 		region->chunksNeedingMeshUpdate_mutex.lock();
 		
-		for ( unsigned int i = 0; i < region->length*region->width*region->height; ++i )
+		for ( unsigned int i = region->generationNextChunk; i < region->length*region->width*region->height; ++i )
 		{
 			if ( region->chunksNeedingMeshUpdate[i] != 0 )
 			{
+				region->generationNextChunk = i + 1;
+				if ( region->generationNextChunk >= region->length*region->width*region->height ) region->generationNextChunk = 0;
+
 				chunkToBeUpdated = i;
 				chunkToBeUpdatedInfo = region->chunksNeedingMeshUpdate[i];
 				region->chunksNeedingMeshUpdate[i] = 0;
@@ -146,36 +149,33 @@ static void build_floor_mesh( Region *region, unsigned int chunk )
 
 	indexCount.push_back( indices.size() );
 
-	if ( verts.size() > 0 )
+	if ( region->chunkMeshData_mutex_2.try_lock() )
 	{
-		if ( region->chunkMeshData_mutex_2.try_lock() )
-		{
-			region->chunkMeshData_2.emplace_back();
-			region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::FLOOR;
-			region->chunkMeshData_2.back().position = vec3( cx, cy, cz );
-			region->chunkMeshData_2.back().age = ++region->ageIncrementerFloor;
-			region->chunkMeshData_2.back().vertexData = std::move( verts );
-			region->chunkMeshData_2.back().indexData = std::move( indices );
-			region->chunkMeshData_2.back().layeredIndexCount = std::move( indexCount );
+		region->chunkMeshData_2.emplace_back();
+		region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::FLOOR;
+		region->chunkMeshData_2.back().position = vec3( cx, cy, cz );
+		region->chunkMeshData_2.back().age = ++region->ageIncrementerFloor;
+		region->chunkMeshData_2.back().vertexData = std::move( verts );
+		region->chunkMeshData_2.back().indexData = std::move( indices );
+		region->chunkMeshData_2.back().layeredIndexCount = std::move( indexCount );
 
-			region->chunkMeshData_mutex_2.unlock();
-		}
-		else if ( region->chunkMeshData_mutex_1.try_lock() )
-		{
-			region->chunkMeshData_1.emplace_back();
-			region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::FLOOR;
-			region->chunkMeshData_1.back().position = vec3( cx, cy, cz );
-			region->chunkMeshData_1.back().age = ++region->ageIncrementerFloor;
-			region->chunkMeshData_1.back().vertexData = std::move( verts );
-			region->chunkMeshData_1.back().indexData = std::move( indices );
-			region->chunkMeshData_1.back().layeredIndexCount = std::move( indexCount );
+		region->chunkMeshData_mutex_2.unlock();
+	}
+	else if ( region->chunkMeshData_mutex_1.try_lock() )
+	{
+		region->chunkMeshData_1.emplace_back();
+		region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::FLOOR;
+		region->chunkMeshData_1.back().position = vec3( cx, cy, cz );
+		region->chunkMeshData_1.back().age = ++region->ageIncrementerFloor;
+		region->chunkMeshData_1.back().vertexData = std::move( verts );
+		region->chunkMeshData_1.back().indexData = std::move( indices );
+		region->chunkMeshData_1.back().layeredIndexCount = std::move( indexCount );
 
-			region->chunkMeshData_mutex_1.unlock();
-		}
-		else
-		{
-			std::cout << "Couldn't upload.\n";
-		}
+		region->chunkMeshData_mutex_1.unlock();
+	}
+	else
+	{
+		std::cout << "ERROR: Couldn't upload.\n";
 	}
 }
 
@@ -271,36 +271,33 @@ static void build_wall_mesh( Region *region, unsigned int chunk )
 
 	indexCount.push_back( indices.size() );
 
-	if ( verts.size() > 0 )
+	if ( region->chunkMeshData_mutex_2.try_lock() )
 	{
-		if ( region->chunkMeshData_mutex_2.try_lock() )
-		{
-			region->chunkMeshData_2.emplace_back();
-			region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::WALL;
-			region->chunkMeshData_2.back().position = vec3( cx, cy, cz );
-			region->chunkMeshData_2.back().age = ++region->ageIncrementerWall;
-			region->chunkMeshData_2.back().vertexData = std::move( verts );
-			region->chunkMeshData_2.back().indexData = std::move( indices );
-			region->chunkMeshData_2.back().layeredIndexCount = std::move( indexCount );
+		region->chunkMeshData_2.emplace_back();
+		region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::WALL;
+		region->chunkMeshData_2.back().position = vec3( cx, cy, cz );
+		region->chunkMeshData_2.back().age = ++region->ageIncrementerWall;
+		region->chunkMeshData_2.back().vertexData = std::move( verts );
+		region->chunkMeshData_2.back().indexData = std::move( indices );
+		region->chunkMeshData_2.back().layeredIndexCount = std::move( indexCount );
 
-			region->chunkMeshData_mutex_2.unlock();
-		}
-		else if ( region->chunkMeshData_mutex_1.try_lock() )
-		{
-			region->chunkMeshData_1.emplace_back();
-			region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::WALL;
-			region->chunkMeshData_1.back().position = vec3( cx, cy, cz );
-			region->chunkMeshData_1.back().age = ++region->ageIncrementerWall;
-			region->chunkMeshData_1.back().vertexData = std::move( verts );
-			region->chunkMeshData_1.back().indexData = std::move( indices );
-			region->chunkMeshData_1.back().layeredIndexCount = std::move( indexCount );
+		region->chunkMeshData_mutex_2.unlock();
+	}
+	else if ( region->chunkMeshData_mutex_1.try_lock() )
+	{
+		region->chunkMeshData_1.emplace_back();
+		region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::WALL;
+		region->chunkMeshData_1.back().position = vec3( cx, cy, cz );
+		region->chunkMeshData_1.back().age = ++region->ageIncrementerWall;
+		region->chunkMeshData_1.back().vertexData = std::move( verts );
+		region->chunkMeshData_1.back().indexData = std::move( indices );
+		region->chunkMeshData_1.back().layeredIndexCount = std::move( indexCount );
 
-			region->chunkMeshData_mutex_1.unlock();
-		}
-		else
-		{
-			std::cout << "Couldn't upload.\n";
-		}
+		region->chunkMeshData_mutex_1.unlock();
+	}
+	else
+	{
+		std::cout << "ERROR: Couldn't upload.\n";
 	}
 }
 

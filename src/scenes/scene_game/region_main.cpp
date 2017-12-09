@@ -69,6 +69,7 @@ void region_init ( const WindowInfo& window, Region *region, unsigned int cl, un
 	region->ageIncrementerFloor = 0;
 	region->ageIncrementerWall = 0;
 	region->ageIncrementerWater = 0;
+	region->generationNextChunk = 0;
 
 	region->viewHeight = ch * wh;
 
@@ -297,7 +298,7 @@ static void upload_mesh ( Region *region, Chunk_Mesh_Data *meshData )
 	}
 	else
 	{
-		std::cout << "Couldn't upload to opengl.	" << meshData->type << "\n";
+		std::cout << "ERROR: Couldn't upload to opengl.	" << meshData->type << "\n";
 	}
 }
 
