@@ -42,6 +42,7 @@ enum Region_Command_Type
 	GENERATE_DATA = 1,
 	ROTATE_RIGHT = 2,
 	ROTATE_LEFT = 3,
+	ADD_WATER_WAVE = 4,
 };
 
 struct Region_Command
@@ -118,6 +119,8 @@ struct Region
 
 	std::mutex chunksNeedingMeshUpdate_mutex;
 	unsigned int *chunksNeedingMeshUpdate = nullptr;
+
+	std::vector<vec4> waterThatNeedsUpdate;
 
 	// GENERATION THREAD:
 	std::atomic<unsigned int> ageIncrementerFloor;

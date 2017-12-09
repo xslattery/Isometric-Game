@@ -68,7 +68,7 @@ void Game_Scene::init( const WindowInfo& window )
 	generatingTextMesh.fontsize = 16;
 	create_text_mesh( "Generating region...", generatingTextMesh, packedGlyphTexture, shader );
 
-	region_init( window, &region, 64, 64, 16, 1, 1, 12 );
+	region_init( window, &region, 64, 64, 16, 4, 4, 12 );
 	region_issue_command( &region, {Region_Command_Type::GENERATE_DATA} );
 }
 
@@ -160,6 +160,9 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 		region_issue_command( &region, {Region_Command_Type::ROTATE_RIGHT} );
 	if ( get_key_down( input, Key::Key_H ) )
 		region_issue_command( &region, {Region_Command_Type::ROTATE_LEFT} );
+
+	if ( get_key_down( input, Key::Key_M ) )
+		region_issue_command( &region, {Region_Command_Type::ADD_WATER_WAVE} );
 }
 
 //////////////////////////////////////
