@@ -7,6 +7,8 @@
 
 #include "../../perlin.hpp"
 
+static std::vector<bool> updatedWaterBitset;
+
 inline Chunk_Data* region_get_chunk ( Region *region, int x, int y, int z );
 inline unsigned int region_get_floor ( Region *region, int x, int y, int z );
 inline unsigned int region_get_wall ( Region *region, int x, int y, int z );
@@ -76,8 +78,8 @@ void region_generate ( Region *region )
 							if ( genHeight > cz+(z*region->chunkHeight) ) *floor = Floor::FLOOR_STONE;
 							if ( genHeight-1 > cz+(z*region->chunkHeight) ) *wall = Wall::WALL_STONE;
 							
-							if ( cz+(z*region->chunkHeight) == region->height*region->chunkHeight-1 ) *water = rand()%5;
-							region->waterThatNeedsUpdate.emplace_back( cx+(x*region->chunkLength), cy+(y*region->chunkWidth), cz+(z*region->chunkHeight), x + y*region->length + z*region->length*region->width );
+							if ( cz+(z*region->chunkHeight) == region->height*region->chunkHeight-1 ) *water = rand()%256;
+							if ( *water > 0 )region->waterThatNeedsUpdate.emplace_back( cx+(x*region->chunkLength), cy+(y*region->chunkWidth), cz+(z*region->chunkHeight), x + y*region->length + z*region->length*region->width );
 						}
 					}
 				}
@@ -149,6 +151,8 @@ void region_generate ( Region *region )
 	
 	region->chunksNeedingMeshUpdate_mutex.unlock();
 
+	updatedWaterBitset = std::vector<bool>( region->length*region->chunkLength*region->width*region->chunkWidth*region->height*region->chunkHeight, false );
+
 	region->chunkDataGenerated = true;
 }
 
@@ -215,8 +219,8 @@ static void process_commands ( Region *region )
 							for ( int cx = 0; cx < region->chunkLength; ++cx )
 							{
 								unsigned int* water = &chunk->water[ cx + cy*region->chunkLength + (region->chunkHeight-1)*region->chunkLength*region->chunkWidth ];
-								*water = rand()%5;
-								region->waterThatNeedsUpdate.emplace_back( cx+(x*region->chunkLength), cy+(y*region->chunkWidth), (region->chunkHeight-1)+((region->height-1)*region->chunkHeight), x + y*region->length + (region->height-1)*region->length*region->width );
+								*water = rand()%256;
+								if ( *water > 0 ) region->waterThatNeedsUpdate.emplace_back( cx+(x*region->chunkLength), cy+(y*region->chunkWidth), (region->chunkHeight-1)+((region->height-1)*region->chunkHeight), x + y*region->length + (region->height-1)*region->length*region->width );
 							}
 						}
 					}
@@ -257,75 +261,157 @@ void region_simulate ( Region *region )
 	if ( region->chunkDataGenerated )
 	{
 		if ( !region->simulationPaused )
-		{
-			// TODO(Xavier): (2017.12.7)
-			// Implement the simulation here.
-			
+		{	
 			std::vector<unsigned int> newChunksThatNeedUpdate( region->length*region->width*region->height, 0 );
 			std::vector<vec4> newWaterThatNeedsUpdate;
-			
-			for ( unsigned int i = 0; i < 100; ++i )
+			std::vector<vec4> waterToBeSet;
+
+			for ( unsigned int i = 0; i < region->length*region->chunkLength*region->width*region->chunkWidth*region->height*region->chunkHeight; ++i )
 			{
-				unsigned int x = rand()%( region->length*region->chunkLength );
-				unsigned int y = rand()%( region->width*region->chunkWidth );
-				unsigned int z = region->height*region->chunkHeight-1;
-				unsigned int cx = x / region->chunkLength;
-				unsigned int cy = y / region->chunkWidth;
-				unsigned int cz = z / region->chunkHeight;
-				region_set_water( region, x, y, z, rand()%5 );
-				newChunksThatNeedUpdate[ cx + cy*region->length + cz*region->length*region->width ] |= Chunk_Mesh_Data_Type::WATER;
-				newWaterThatNeedsUpdate.emplace_back( x, y, z, cx + cy*region->length + cz*region->length*region->width );
+				updatedWaterBitset[ i ] = false;
 			}
 
 			for ( auto p : region->waterThatNeedsUpdate )
 			{
-				int sameDepth = region_get_water( region, p.x, p.y, p.z );
-				if ( sameDepth > 0 )
-				{
-					unsigned int sameFloor = region_get_floor( region, p.x, p.y, p.z );
-					if ( sameFloor == Floor::FLOOR_NONE )
-					{
-						unsigned int belowWall = region_get_wall( region, p.x, p.y, p.z-1 );
-						if ( belowWall == Wall::WALL_NONE )
-						{
-							int belowDepth = region_get_water( region, p.x, p.y, p.z-1 );
-							if ( belowDepth < 4 )
-							{
-								belowDepth += sameDepth;
-								sameDepth = belowDepth - 4;
-								if ( sameDepth < 0 ) sameDepth = 0;
-								belowDepth -= sameDepth;
-								
-								region_set_water( region, p.x, p.y, p.z-1, belowDepth );
-								unsigned int cx = p.x / region->chunkLength;
-								unsigned int cy = p.y / region->chunkWidth;
-								unsigned int cz = (p.z-1) / region->chunkHeight;
-								unsigned int newChunkIndex = cx + cy*region->length + cz*region->length*region->width;
-								newChunksThatNeedUpdate[ newChunkIndex ] |= Chunk_Mesh_Data_Type::WATER;
-								newWaterThatNeedsUpdate.emplace_back( p.x, p.y, p.z-1, newChunkIndex );
+				if ( updatedWaterBitset[ p.x + p.y*region->length*region->chunkLength + p.z*region->length*region->chunkLength*region->width*region->chunkWidth ] == true ) continue;
+				updatedWaterBitset[ p.x + p.y*region->length*region->chunkLength + p.z*region->length*region->chunkLength*region->width*region->chunkWidth ] = true;
 
-								region_set_water( region, p.x, p.y, p.z, sameDepth );
-								newChunksThatNeedUpdate[ p.w ] |= Chunk_Mesh_Data_Type::WATER;
-								newWaterThatNeedsUpdate.emplace_back( p );
-							}
-						}
+				int sameDepth = region_get_water( region, p.x, p.y, p.z ) & 0xFF;
+				if ( sameDepth == 0 ) continue;
+
+				if ( region_get_floor(region, p.x, p.y, p.z) == Floor::FLOOR_NONE && region_get_wall(region, p.x, p.y, p.z-1) == Wall::WALL_NONE && region_get_water(region, p.x, p.y, p.z-1) < 255 )
+				{
+					int belowDepth = region_get_water( region, p.x, p.y, p.z-1 ) & 0xFF;
+					
+					belowDepth += sameDepth;
+					sameDepth = belowDepth - 255;
+					if ( sameDepth < 0 ) sameDepth = 0;
+					belowDepth -= sameDepth;
+
+					region_set_water( region, p.x, p.y, p.z, sameDepth );
+					region_set_water( region, p.x, p.y, p.z-1, belowDepth );
+
+					unsigned int cx = p.x / region->chunkLength;
+					unsigned int cy = p.y / region->chunkWidth;
+					unsigned int cz = (p.z-1) / region->chunkHeight;
+					unsigned int newChunkIndex = cx + cy*region->length + cz*region->length*region->width;
+					newChunksThatNeedUpdate[ newChunkIndex ] |= Chunk_Mesh_Data_Type::WATER;
+					newChunksThatNeedUpdate[ p.w ] |= Chunk_Mesh_Data_Type::WATER;
+					
+					if ( sameDepth > 0 ) newWaterThatNeedsUpdate.emplace_back( p );
+					newWaterThatNeedsUpdate.emplace_back( p.x, p.y, p.z-1, newChunkIndex );
+				}
+
+				if ( sameDepth <= 0 ) continue;
+
+				{
+					int sides = 1;
+					int xpw = region_get_wall(region, p.x+1, p.y, p.z ); if ( p.x+1 == region->length*region->chunkLength ) xpw = Wall::WALL_STONE;
+					int xnw = region_get_wall(region, p.x-1, p.y, p.z ); if ( p.x-1 < 0 ) xnw = Wall::WALL_STONE;
+					int ypw = region_get_wall(region, p.x, p.y+1, p.z ); if ( p.y+1 == region->width*region->chunkWidth ) ypw = Wall::WALL_STONE;
+					int ynw = region_get_wall(region, p.x, p.y-1, p.z ); if ( p.y-1 < 0) ynw = Wall::WALL_STONE;
+					if ( xpw == Wall::WALL_NONE ) sides++;
+					if ( xnw == Wall::WALL_NONE ) sides++;
+					if ( ypw == Wall::WALL_NONE ) sides++;
+					if ( ynw == Wall::WALL_NONE ) sides++;
+					int xp = region_get_water( region, p.x+1, p.y, p.z ) & 0xFF;
+					int xn = region_get_water( region, p.x-1, p.y, p.z ) & 0xFF;
+					int yp = region_get_water( region, p.x, p.y+1, p.z ) & 0xFF;
+					int yn = region_get_water( region, p.x, p.y-1, p.z ) & 0xFF;
+					int average = (sameDepth + xp + xn + yp + yn) / sides;
+					int leftOver = sameDepth;
+
+					if ( sides > 1 )
+					{
+						unsigned int cx = p.x / region->chunkLength;
+						unsigned int cy = p.y / region->chunkWidth;
+						unsigned int cz = (p.z+1) / region->chunkHeight;
+						unsigned int newChunkIndex = cx + cy*region->length + cz*region->length*region->width;
+						newChunksThatNeedUpdate[ newChunkIndex ] |= Chunk_Mesh_Data_Type::WATER;
+						newWaterThatNeedsUpdate.emplace_back( p.x, p.y, p.z+1, newChunkIndex );
 					}
+
+					if ( xpw == Wall::WALL_NONE )
+					{
+						int flow = average - xp;
+						if ( flow < 0 ) flow = 0;
+						if ( flow > leftOver ) flow = leftOver;
+						region_set_water( region, p.x+1, p.y, p.z, flow + xp );
+						leftOver -= flow;
+
+						unsigned int cx = (p.x+1) / region->chunkLength;
+						unsigned int cy = p.y / region->chunkWidth;
+						unsigned int cz = p.z / region->chunkHeight;
+						unsigned int newChunkIndex = cx + cy*region->length + cz*region->length*region->width;
+						newChunksThatNeedUpdate[ newChunkIndex ] |= Chunk_Mesh_Data_Type::WATER;
+						newWaterThatNeedsUpdate.emplace_back( p.x+1, p.y, p.z, newChunkIndex );
+					}
+
+					if ( xnw == Wall::WALL_NONE )
+					{
+						int flow = average - xn;
+						if ( flow < 0 ) flow = 0;
+						if ( flow > leftOver ) flow = leftOver;
+						region_set_water( region, p.x-1, p.y, p.z, flow + xn );
+						leftOver -= flow;
+
+						unsigned int cx = (p.x-1) / region->chunkLength;
+						unsigned int cy = p.y / region->chunkWidth;
+						unsigned int cz = p.z / region->chunkHeight;
+						unsigned int newChunkIndex = cx + cy*region->length + cz*region->length*region->width;
+						newChunksThatNeedUpdate[ newChunkIndex ] |= Chunk_Mesh_Data_Type::WATER;
+						newWaterThatNeedsUpdate.emplace_back( p.x-1, p.y, p.z, newChunkIndex );
+					}
+
+					if ( ypw == Wall::WALL_NONE )
+					{
+						int flow = average - yp;
+						if ( flow < 0 ) flow = 0;
+						if ( flow > leftOver ) flow = leftOver;
+						region_set_water( region, p.x, p.y+1, p.z, flow + yp );
+						leftOver -= flow;
+
+						unsigned int cx = p.x / region->chunkLength;
+						unsigned int cy = (p.y+1) / region->chunkWidth;
+						unsigned int cz = p.z / region->chunkHeight;
+						unsigned int newChunkIndex = cx + cy*region->length + cz*region->length*region->width;
+						newChunksThatNeedUpdate[ newChunkIndex ] |= Chunk_Mesh_Data_Type::WATER;
+						newWaterThatNeedsUpdate.emplace_back( p.x, p.y+1, p.z, newChunkIndex );
+					}
+
+					if ( ynw == Wall::WALL_NONE )
+					{
+						int flow = average - yn;
+						if ( flow < 0 ) flow = 0;
+						if ( flow > leftOver ) flow = leftOver;
+						region_set_water( region, p.x, p.y-1, p.z, flow + yn );
+						leftOver -= flow;
+
+						unsigned int cx = p.x / region->chunkLength;
+						unsigned int cy = (p.y-1) / region->chunkWidth;
+						unsigned int cz = p.z / region->chunkHeight;
+						unsigned int newChunkIndex = cx + cy*region->length + cz*region->length*region->width;
+						newChunksThatNeedUpdate[ newChunkIndex ] |= Chunk_Mesh_Data_Type::WATER;
+						newWaterThatNeedsUpdate.emplace_back( p.x, p.y-1, p.z, newChunkIndex );
+					}
+
+					region_set_water( region, p.x, p.y, p.z, leftOver );
+					newChunksThatNeedUpdate[ p.w ] |= Chunk_Mesh_Data_Type::WATER;
+					// if ( leftOver != sameDepth ) newWaterThatNeedsUpdate.emplace_back( p );
 				}
 			}
 
 			region->waterThatNeedsUpdate = std::move( newWaterThatNeedsUpdate );
 
 			region->chunksNeedingMeshUpdate_mutex.lock();
+
 			for ( unsigned int i = 0; i < newChunksThatNeedUpdate.size(); ++i )
 			{
 				region->chunksNeedingMeshUpdate[ i ] |= newChunksThatNeedUpdate[ i ];
 			}
+
 			region->chunksNeedingMeshUpdate_mutex.unlock();
 		}
-
-		// NOTE(Xavier): (2017.12.8)
-		// This Should me moved to its own thread.
-		// region_build_new_meshes( region );
 	}
 
 #ifdef PLATFORM_OSX
