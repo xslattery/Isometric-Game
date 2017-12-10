@@ -319,6 +319,8 @@ void region_simulate ( Region *region )
 					int yp = region_get_water( region, p.x, p.y+1, p.z ) & 0xFF;
 					int yn = region_get_water( region, p.x, p.y-1, p.z ) & 0xFF;
 					int average = (sameDepth + xp + xn + yp + yn) / sides;
+
+					if ( average == sameDepth ) continue;
 					
 					int modxp = 0;
 					int modxn = 0;
@@ -326,6 +328,8 @@ void region_simulate ( Region *region )
 					int modyn = 0;
 					
 					int mod = (sameDepth + xp + xn + yp + yn) % sides;
+
+					if ( mod != 0 && rand()%50 == 1 ) mod = 0; // This is to help the system get into a steady state.
 
 					if ( mod == 1 )
 					{
