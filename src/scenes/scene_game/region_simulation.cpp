@@ -319,7 +319,165 @@ void region_simulate ( Region *region )
 					int yp = region_get_water( region, p.x, p.y+1, p.z ) & 0xFF;
 					int yn = region_get_water( region, p.x, p.y-1, p.z ) & 0xFF;
 					int average = (sameDepth + xp + xn + yp + yn) / sides;
-					int leftOver = sameDepth;
+					
+					int modxp = 0;
+					int modxn = 0;
+					int modyp = 0;
+					int modyn = 0;
+					
+					int mod = (sameDepth + xp + xn + yp + yn) % sides;
+
+					if ( mod == 1 )
+					{
+						if ( sides == 2 )
+						{
+							if ( !xpw ) modxp = 1;
+							if ( !xnw ) modxn = 1;
+							if ( !ypw ) modyp = 1;
+							if ( !ynw ) modyn = 1;
+						}
+						else if ( sides == 3 )
+						{
+							//
+							
+
+						}
+						else if ( sides == 4 )
+						{
+							if ( !xpw && !xnw && !ypw )
+							{
+								switch (rand()%3)
+								{
+									case 0: modxp = 0; modxn = 0; modyp = 1; break;
+									case 1: modxp = 1; modxn = 0; modyp = 0; break;
+									case 2: modxp = 0; modxn = 1; modyp = 0; break;
+								}
+							}
+							if ( !xpw && !xnw && !ynw )
+							{
+								switch (rand()%3)
+								{
+									case 0: modxp = 0; modxn = 0; modyn = 1; break;
+									case 1: modxp = 1; modxn = 0; modyn = 0; break;
+									case 2: modxp = 0; modxn = 1; modyn = 0; break;
+								}
+							}
+							if ( !xpw && !ynw && !ypw )
+							{
+								switch (rand()%3)
+								{
+									case 0: modxp = 0; modyn = 0; modyp = 1; break;
+									case 1: modxp = 1; modyn = 0; modyp = 0; break;
+									case 2: modxp = 0; modyn = 1; modyp = 0; break;
+								}
+							}
+							if ( !ynw && !xnw && !ypw )
+							{
+								switch (rand()%3)
+								{
+									case 0: modyn = 0; modxn = 0; modyp = 1; break;
+									case 1: modyn = 1; modxn = 0; modyp = 0; break;
+									case 2: modyn = 0; modxn = 1; modyp = 0; break;
+								}
+							}
+						}
+						else if ( sides == 5 )
+						{
+							switch (rand()%4)
+							{
+								case 0: modxp = 1; break;
+								case 1: modxn = 1; break;
+								case 2: modyp = 1; break;
+								case 3: modyn = 1; break;
+							}
+						}
+					}
+					else if ( mod == 2 )
+					{
+						if ( sides == 3 )
+						{
+							if ( !xpw && !xnw ) modxp = 1; modxn = 1;
+							if ( !xpw && !ynw ) modxp = 1; modyn = 1;
+							if ( !xpw && !ypw ) modxp = 1; modyp = 1;
+							if ( !xnw && !ypw ) modxn = 1; modyp = 1;
+							if ( !xnw && !ynw ) modxn = 1; modyn = 1;
+							if ( !ynw && !ypw ) modyn = 1; modyp = 1;
+						}
+						if ( sides == 4 )
+						{
+							if ( !xpw && !xnw && !ypw )
+							{
+								switch (rand()%3)
+								{
+									case 0: modxp = 0; modxn = 1; modyp = 1; break;
+									case 1: modxp = 1; modxn = 0; modyp = 1; break;
+									case 2: modxp = 1; modxn = 1; modyp = 0; break;
+								}
+							}
+							if ( !xpw && !xnw && !ynw )
+							{
+								switch (rand()%3)
+								{
+									case 0: modxp = 0; modxn = 1; modyn = 1; break;
+									case 1: modxp = 1; modxn = 0; modyn = 1; break;
+									case 2: modxp = 1; modxn = 1; modyn = 0; break;
+								}
+							}
+							if ( !xpw && !ynw && !ypw )
+							{
+								switch (rand()%3)
+								{
+									case 0: modxp = 0; modyn = 1; modyp = 1; break;
+									case 1: modxp = 1; modyn = 0; modyp = 1; break;
+									case 2: modxp = 1; modyn = 1; modyp = 0; break;
+								}
+							}
+							if ( !ynw && !xnw && !ypw )
+							{
+								switch (rand()%3)
+								{
+									case 0: modyn = 0; modxn = 1; modyp = 1; break;
+									case 1: modyn = 1; modxn = 0; modyp = 1; break;
+									case 2: modyn = 1; modxn = 1; modyp = 0; break;
+								}
+							}
+						}
+						else if ( sides == 5 )
+						{
+							switch (rand()%2)
+							{
+								case 0: modxp = 1; modxn = 1; break;
+								case 1: modyp = 1; modyn = 1; break;
+							}
+						}
+					}
+					else if ( mod == 3 )
+					{
+						if ( sides == 4 )
+						{
+							if ( !xpw && !xnw && !ypw ) modxp = 1; modxn = 1; modyp = 1;
+							if ( !xpw && !xnw && !ynw ) modxp = 1; modxn = 1; modyn = 1;
+							if ( !xpw && !ynw && !ypw ) modxp = 1; modyn = 1; modyp = 1;
+							if ( !ynw && !xnw && !ypw ) modyn = 1; modxn = 1; modyp = 1;
+						}
+						else if ( sides == 5 )
+						{
+							switch (rand()%4)
+							{
+								case 0: modxp = 1; modxn = 1; modyp = 1; break;
+								case 1: modxp = 1; modxn = 1; modyn = 1; break;
+								case 2: modyp = 1; modxp = 1; modyp = 1; break;
+								case 3: modyn = 1; modyp = 1; modxn = 1; break;
+							}
+						}
+					}
+					else if ( mod == 4 )
+					{
+						modxp = 1;
+						modxn = 1;
+						modyp = 1;
+						modyn = 1;
+					}
 
 					if ( sides > 1 )
 					{
@@ -333,11 +491,7 @@ void region_simulate ( Region *region )
 
 					if ( xpw == Wall::WALL_NONE )
 					{
-						int flow = average - xp;
-						if ( flow < 0 ) flow = 0;
-						if ( flow > leftOver ) flow = leftOver;
-						region_set_water( region, p.x+1, p.y, p.z, flow + xp );
-						leftOver -= flow;
+						region_set_water( region, p.x+1, p.y, p.z, average + modxp );
 
 						unsigned int cx = (p.x+1) / region->chunkLength;
 						unsigned int cy = p.y / region->chunkWidth;
@@ -349,11 +503,7 @@ void region_simulate ( Region *region )
 
 					if ( xnw == Wall::WALL_NONE )
 					{
-						int flow = average - xn;
-						if ( flow < 0 ) flow = 0;
-						if ( flow > leftOver ) flow = leftOver;
-						region_set_water( region, p.x-1, p.y, p.z, flow + xn );
-						leftOver -= flow;
+						region_set_water( region, p.x-1, p.y, p.z, average + modxn );
 
 						unsigned int cx = (p.x-1) / region->chunkLength;
 						unsigned int cy = p.y / region->chunkWidth;
@@ -365,11 +515,7 @@ void region_simulate ( Region *region )
 
 					if ( ypw == Wall::WALL_NONE )
 					{
-						int flow = average - yp;
-						if ( flow < 0 ) flow = 0;
-						if ( flow > leftOver ) flow = leftOver;
-						region_set_water( region, p.x, p.y+1, p.z, flow + yp );
-						leftOver -= flow;
+						region_set_water( region, p.x, p.y+1, p.z, average + modyp );
 
 						unsigned int cx = p.x / region->chunkLength;
 						unsigned int cy = (p.y+1) / region->chunkWidth;
@@ -381,11 +527,7 @@ void region_simulate ( Region *region )
 
 					if ( ynw == Wall::WALL_NONE )
 					{
-						int flow = average - yn;
-						if ( flow < 0 ) flow = 0;
-						if ( flow > leftOver ) flow = leftOver;
-						region_set_water( region, p.x, p.y-1, p.z, flow + yn );
-						leftOver -= flow;
+						region_set_water( region, p.x, p.y-1, p.z, average + modyn );
 
 						unsigned int cx = p.x / region->chunkLength;
 						unsigned int cy = (p.y-1) / region->chunkWidth;
@@ -395,7 +537,8 @@ void region_simulate ( Region *region )
 						newWaterThatNeedsUpdate.emplace_back( p.x, p.y-1, p.z, newChunkIndex );
 					}
 
-					region_set_water( region, p.x, p.y, p.z, leftOver );
+					// sameDepth = leftOver;
+					region_set_water( region, p.x, p.y, p.z, average );
 					newChunksThatNeedUpdate[ p.w ] |= Chunk_Mesh_Data_Type::WATER;
 					// if ( leftOver != sameDepth ) newWaterThatNeedsUpdate.emplace_back( p );
 				}
