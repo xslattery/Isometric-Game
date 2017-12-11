@@ -115,7 +115,6 @@ void region_init ( const WindowInfo& window, Region *region, unsigned int cl, un
 	region->projectionScale = 1.0f;
 	region->projection = orthographic_projection( -window.height/2*region->projectionScale, window.height/2*region->projectionScale, -window.width/2*region->projectionScale, window.width/2*region->projectionScale, 0.1f, 5000.0f );
 	region->camera = translate( mat4(1), -vec3(0, 0, 500) );
-
 }
 
 

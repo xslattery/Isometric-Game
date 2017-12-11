@@ -68,7 +68,7 @@ void Game_Scene::init( const WindowInfo& window )
 	generatingTextMesh.fontsize = 16;
 	create_text_mesh( "Generating region...", generatingTextMesh, packedGlyphTexture, shader );
 
-	region_init( window, &region, 64, 64, 16, 1, 1, 12 );
+	region_init( window, &region, 64, 64, 16, 4, 4, 12 );
 	region_issue_command( &region, {Region_Command_Type::GENERATE_DATA} );
 }
 
@@ -82,7 +82,8 @@ void Game_Scene::render ( const WindowInfo& window )
 		"\nDIM: " + std::to_string((int)window.hidpi_width) + "x" + std::to_string((int)window.hidpi_height) +
 		"\nS: " + std::to_string(region.projectionScale) + 
 		"\nL: " + std::to_string(region.length) + " W: " + std::to_string(region.width) + " H: " + std::to_string(region.height) +
-		"\nCL: " + std::to_string((int)region.chunkLength) + " CW: " + std::to_string((int)region.chunkWidth) + " CH: " + std::to_string((int)region.chunkHeight)
+		"\nCL: " + std::to_string((int)region.chunkLength) + " CW: " + std::to_string((int)region.chunkWidth) + " CH: " + std::to_string((int)region.chunkHeight) +
+		"\nWBU: " + std::to_string(region.numberOfWaterBeingUpdated)
 		
 		).c_str(), textMesh, packedGlyphTexture, shader );
 

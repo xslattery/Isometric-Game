@@ -25,7 +25,7 @@ static void simulation_thread_entry ()
 		std::size_t startTime;
 	#endif
 
-	unsigned int simTime = 10;
+	unsigned int simTime = 1;
 
 	std::size_t delta = 0;
 	while ( !terminateSimulationThread )
@@ -70,7 +70,7 @@ static void generation_thread_entry ()
 		std::size_t startTime;
 	#endif
 
-	unsigned int genTime = 10;
+	unsigned int genTime = 1;
 	bool dontWait = false;
 
 	std::size_t delta = 0;

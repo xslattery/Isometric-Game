@@ -133,6 +133,7 @@ struct Region
 	std::atomic<unsigned int> simulationDeltaTime;
 	std::atomic<unsigned int> generationDeltaTime;
 	std::atomic_bool chunkDataGenerated;
+	std::atomic<unsigned int> numberOfWaterBeingUpdated;
 
 	std::atomic<unsigned int> viewDirection;
 
