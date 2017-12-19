@@ -121,6 +121,7 @@ struct Region
 	unsigned int *chunksNeedingMeshUpdate = nullptr;
 
 	std::vector<vec4> waterThatNeedsUpdate;
+	std::vector<bool> updatedWaterBitset;
 
 	// GENERATION THREAD:
 	std::atomic<unsigned int> ageIncrementerFloor;

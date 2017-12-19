@@ -73,6 +73,8 @@ void region_init ( const WindowInfo& window, Region *region, unsigned int cl, un
 
 	region->viewHeight = ch * wh;
 
+	region->updatedWaterBitset = std::vector<bool>( region->length*region->chunkLength*region->width*region->chunkWidth*region->height*region->chunkHeight, false );
+
 	region->shader = load_shader(
 		R"(
 			#version 330 core

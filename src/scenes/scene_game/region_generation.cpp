@@ -316,6 +316,36 @@ static void build_wall_mesh( Region *region, unsigned int chunk )
 
 
 
+inline Chunk_Data* region_get_chunk ( Region *region, int x, int y, int z )
+{
+	if ( x < 0 || x >= region->length || y < 0 || y >= region->width || z < 0 || z >= region->height ) return nullptr;
+	return &region->chunks[ x + y*region->length + z*region->length*region->width ];
+}
+
+inline unsigned int region_get_water ( Region *region, int x, int y, int z )
+{
+	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return 0;
+	unsigned int cx = x / region->chunkLength;
+	unsigned int cy = y / region->chunkWidth;
+	unsigned int cz = z / region->chunkHeight;
+	unsigned int lx = x % region->chunkLength;
+	unsigned int ly = y % region->chunkWidth;
+	unsigned int lz = z % region->chunkHeight;
+	return region_get_chunk( region, cx, cy, cz )->water[ lx + ly*region->chunkLength + lz*region->chunkLength*region->chunkWidth ];
+}
+
+inline unsigned int region_get_floor ( Region *region, int x, int y, int z )
+{
+	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return 0;
+	unsigned int cx = x / region->chunkLength;
+	unsigned int cy = y / region->chunkWidth;
+	unsigned int cz = z / region->chunkHeight;
+	unsigned int lx = x % region->chunkLength;
+	unsigned int ly = y % region->chunkWidth;
+	unsigned int lz = z % region->chunkHeight;
+	return region_get_chunk( region, cx, cy, cz )->floor[ lx + ly*region->chunkLength + lz*region->chunkLength*region->chunkWidth ];
+}
+
 static void build_water_mesh( Region *region, unsigned int chunk )
 {
 	std::vector<float> verts;
@@ -335,6 +365,9 @@ static void build_water_mesh( Region *region, unsigned int chunk )
 	const vec2 xDir { -1, 18.0f/27.0f };
 	const vec2 yDir {  1, 18.0f/27.0f };
 
+	const vec2 wtl = { 0, 			1.0f-1.0f/512*68*4 };
+	const vec2 wbr = { 1.0f/512*54,	1.0f-1.0f/512*68*3 };
+
 	unsigned int *chunkDataWater = region->chunks[chunk].water;
 
 	for ( unsigned int i = 0; i < region->chunkLength*region->chunkWidth*region->chunkHeight; ++i )
@@ -344,11 +377,26 @@ static void build_water_mesh( Region *region, unsigned int chunk )
 
 		if ( (chunkDataWater[i] & 0xFF) > 0 )
 		{
-			if ( i + region->chunkLength*region->chunkWidth < region->chunkLength*region->chunkWidth*region->chunkHeight )
+			float zz = i / (region->chunkLength*region->chunkWidth);
+			unsigned int iTemp = i - zz * region->chunkLength * region->chunkWidth;
+			float yy = iTemp / region->chunkLength;
+			float xx = iTemp % region->chunkLength;
+
+			if ( xx+ox != 0 && xx+ox != region->chunkLength-1 && yy+oy != 0 && yy+oy != region->chunkWidth-1 )
 			{
-				if ( chunkDataWater[ i + region->chunkLength*region->chunkWidth ] > 0 )
+				if ( i + region->chunkLength*region->chunkWidth < region->chunkLength*region->chunkWidth*region->chunkHeight )
 				{
-					// continue;
+					if ( chunkDataWater[ i + region->chunkLength*region->chunkWidth ] > 0 )
+					{
+						continue;
+					}
+				}
+				else
+				{
+					if ( region_get_water(region, xx+ox, yy+oy, zz+oz+1) > 0 )
+					{
+						continue;
+					}
 				}
 			}
 
@@ -374,39 +422,26 @@ static void build_water_mesh( Region *region, unsigned int chunk )
 				br = { 1.0f/512*54*4,	1.0f-1.0f/512*68*2 };
 			}
 
-			float zz = i / (region->chunkLength*region->chunkWidth);
-			unsigned int iTemp = i - zz * region->chunkLength * region->chunkWidth;
-			float yy = iTemp / region->chunkLength;
-			float xx = iTemp % region->chunkLength;
-
 			vec2 pos;
 			float zPos = 0;
 
 			if ( region->viewDirection == Direction::D_NORTH )
 			{
-				// if ( (chunkDataWater[i] & Occlusion::N_HIDDEN) != 0 ) continue;
-
 				pos = ( (xx+ox)*xDir + (yy+oy)*yDir ) * 27;
 				zPos = -(xx+ox + yy+oy) + (zz+oz)*2 + 0.1f;
 			}
 			else if ( region->viewDirection == Direction::D_WEST )
 			{
-				// if ( (chunkDataWater[i] & Occlusion::W_HIDDEN) != 0 ) continue;
-
 				pos = ( (xx+ox)*yDir + (wWidth-1-(yy+oy))*xDir ) * 27;
 				zPos = -(xx+ox + wWidth-1-(yy+oy)) + (zz+oz)*2 + 0.1f;	
 			}
 			else if ( region->viewDirection == Direction::D_SOUTH )
 			{
-				// if ( (chunkDataWater[i] & Occlusion::S_HIDDEN) != 0 ) continue;
-
 				pos = ( (wLength-1-(xx+ox))*xDir + (wWidth-1-(yy+oy))*yDir ) * 27;
 				zPos = -(wLength-1-(xx+ox) + wWidth-1-(yy+oy)) + (zz+oz)*2 + 0.1f;
 			}
 			else if ( region->viewDirection == Direction::D_EAST )
 			{
-				// if ( (chunkDataWater[i] & Occlusion::E_HIDDEN) != 0 ) continue;
-
 				pos = ( (wLength-1-(xx+ox))*yDir + (yy+oy)*xDir ) * 27;
 				zPos = -(wLength-1-(xx+ox) + (yy+oy)) + (zz+oz)*2 + 0.1f;
 			}
@@ -428,6 +463,28 @@ static void build_water_mesh( Region *region, unsigned int chunk )
 				 27.0f+pos.x,  0.0f+pos.y, zPos,		br.x, br.y,
 			};
 			verts.insert( verts.end(), tempVerts, tempVerts+20 );
+
+			if ( region_get_floor(region, xx+ox, yy+oy, zz+oz) == Floor::FLOOR_NONE && region_get_water(region, xx+ox, yy+oy, zz+oz-1 ) > 0 )
+			{
+				zPos -= 0.1f;
+
+				unsigned int idxP = verts.size()/5;
+				unsigned int tempIndices [6] =
+				{
+					idxP+0, idxP+1, idxP+2,
+					idxP+2, idxP+1, idxP+3
+				};
+				indices.insert( indices.end(), tempIndices, tempIndices+6 );
+
+				float tempVerts [20] =
+				{
+					-27.0f+pos.x, 68.0f+pos.y, zPos,		wtl.x, wtl.y,
+					-27.0f+pos.x,  0.0f+pos.y, zPos,		wtl.x, wbr.y,
+					 27.0f+pos.x, 68.0f+pos.y, zPos,		wbr.x, wtl.y,
+					 27.0f+pos.x,  0.0f+pos.y, zPos,		wbr.x, wbr.y,
+				};
+				verts.insert( verts.end(), tempVerts, tempVerts+20 );
+			}
 		}
 	}
 
