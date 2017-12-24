@@ -90,3 +90,25 @@ void set_uniform_mat4 ( const unsigned int shader, const char *name, mat4 *matri
 {
     glUniformMatrix4fv( glGetUniformLocation( shader, name ), 1, GL_FALSE, (float*)matrix ); GLCALL;
 }
+
+
+
+void set_uniform_vec2 ( const unsigned int shader, const char *name, vec4 vector )
+{
+    glUniform2f( glGetUniformLocation(shader, name), vector.x, vector.y ); GLCALL;
+}
+
+void set_uniform_vec3 ( const unsigned int shader, const char *name, vec4 vector )
+{
+    glUniform3f( glGetUniformLocation(shader, name), vector.x, vector.y, vector.z ); GLCALL;
+}
+
+void set_uniform_vec4 ( const unsigned int shader, const char *name, vec4 vector )
+{
+    glUniform4f( glGetUniformLocation(shader, name), vector.x, vector.y, vector.z, vector.w ); GLCALL;
+}
+
+void set_uniform_mat4 ( const unsigned int shader, const char *name, mat4 matrix )
+{
+    glUniformMatrix4fv( glGetUniformLocation( shader, name ), 1, GL_FALSE, (float*)&matrix ); GLCALL;
+}

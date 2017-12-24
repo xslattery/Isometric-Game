@@ -382,7 +382,7 @@ static void build_water_mesh( Region *region, unsigned int chunk )
 			float yy = iTemp / region->chunkLength;
 			float xx = iTemp % region->chunkLength;
 
-			if ( xx+ox != 0 && xx+ox != region->chunkLength-1 && yy+oy != 0 && yy+oy != region->chunkWidth-1 )
+			if ( xx+ox != 0 && xx+ox != region->chunkLength*region->length-1 && yy+oy != 0 && yy+oy != region->chunkWidth*region->width-1 )
 			{
 				if ( i + region->chunkLength*region->chunkWidth < region->chunkLength*region->chunkWidth*region->chunkHeight )
 				{

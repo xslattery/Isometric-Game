@@ -68,7 +68,7 @@ void Game_Scene::init( const WindowInfo& window )
 	generatingTextMesh.fontsize = 16;
 	create_text_mesh( "Generating region...", generatingTextMesh, packedGlyphTexture, shader );
 
-	region_init( window, &region, 64, 64, 16, 1, 1, 12 );
+	region_init( window, &region, 32, 32, 32, 2, 2, 6 );
 	region_issue_command( &region, {Region_Command_Type::GENERATE_DATA} );
 }
 
@@ -135,7 +135,9 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 	if ( get_key_down( input, Key::Key_P ) )
 		region.simulationPaused = !region.simulationPaused;
 
-	float speed = 5000;
+	float speed = 3000;
+	if ( get_key( input, Key::Key_RETURN ) )
+		speed = 500;
 	if ( get_key( input, Key::Key_W ) )
 		region.camera = translate( region.camera, -vec3(0,1,0)*window.deltaTime*speed );
 	if ( get_key( input, Key::Key_S ) )
@@ -152,10 +154,19 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 		region.projection = orthographic_projection( -window.height/2*region.projectionScale, window.height/2*region.projectionScale, -window.width/2*region.projectionScale, window.width/2*region.projectionScale, 0.1f, 5000.0f );
 	}
 
-	if ( get_key( input, Key::Key_Q ) )
-		region.viewHeight--;
-	if ( get_key( input, Key::Key_E ) )
-		region.viewHeight++;
+	if ( get_key( input, Key::Key_Z ) )
+	{
+		if ( get_key( input, Key::Key_Q ) )
+			region.viewHeight--;
+		if ( get_key( input, Key::Key_E ) )
+			region.viewHeight++;
+	} else
+	{
+		if ( get_key_down( input, Key::Key_Q ) )
+			region.viewHeight--;
+		if ( get_key_down( input, Key::Key_E ) )
+			region.viewHeight++;
+	}
 
 	if ( get_key_down( input, Key::Key_J ) )
 		region_issue_command( &region, {Region_Command_Type::ROTATE_RIGHT} );

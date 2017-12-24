@@ -15,4 +15,9 @@ void set_uniform_vec3 ( const unsigned int shader, const char *name, vec4 *vecto
 void set_uniform_vec4 ( const unsigned int shader, const char *name, vec4 *vector );
 void set_uniform_mat4 ( const unsigned int shader, const char *name, mat4 *matrix );
 
+void set_uniform_vec2 ( const unsigned int shader, const char *name, vec4 vector );
+void set_uniform_vec3 ( const unsigned int shader, const char *name, vec4 vector );
+void set_uniform_vec4 ( const unsigned int shader, const char *name, vec4 vector );
+void set_uniform_mat4 ( const unsigned int shader, const char *name, mat4 matrix );
+
 #endif

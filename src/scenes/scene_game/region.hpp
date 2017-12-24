@@ -157,6 +157,9 @@ struct Region
 	mat4 projection;
 	mat4 camera;
 	int viewHeight;
+
+	// DEBUG:
+	bool debug_drawDebugGrid;
 };
 
 ///////////////////

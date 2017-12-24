@@ -7,6 +7,15 @@
 
 #include "../../shader.hpp"
 
+static bool debugGridMeshGenerated = false;
+static unsigned int debugGrid_vao = 0;
+static unsigned int debugGrid_vbo = 0;
+static unsigned int debugGrid_ibo = 0;
+static unsigned int debugGrid_indexCount = 0;
+static unsigned int debugGrid_shader = 0;
+static void generate_debug_grid_mesh ( Region *region );
+static void render_debug_grid_mesh ( float verticalOffset );
+
 static void load_texture ( unsigned int* texID, const char* name )
 {
 	int texWidth, texHeight, n;
@@ -82,9 +91,9 @@ void region_init ( const WindowInfo& window, Region *region, unsigned int cl, un
 			layout(location = 0) in vec3 position;
 			layout(location = 1) in vec2 textcoord;
 
-			uniform mat4 model;
-			uniform mat4 view;
 			uniform mat4 projection;
+			uniform mat4 view;
+			uniform mat4 model;
 
 			out vec2 passTexCoord;
 
@@ -117,6 +126,37 @@ void region_init ( const WindowInfo& window, Region *region, unsigned int cl, un
 	region->projectionScale = 1.0f;
 	region->projection = orthographic_projection( -window.height/2*region->projectionScale, window.height/2*region->projectionScale, -window.width/2*region->projectionScale, window.width/2*region->projectionScale, 0.1f, 5000.0f );
 	region->camera = translate( mat4(1), -vec3(0, 0, 500) );
+
+	// NOTE(Xavier): (2017.12.24) Debug.
+	region->debug_drawDebugGrid = true;
+	debugGrid_shader = load_shader(
+		R"(
+			#version 330 core
+
+			layout(location = 0) in vec2 position;
+
+			uniform mat4 projection;
+			uniform mat4 view;
+			uniform mat4 model;
+
+			void main ()
+			{
+			    gl_Position = projection * view * model * vec4(position, 0.0, 1.0);
+			}
+		)",
+		R"(
+			#version 330 core
+
+			uniform vec4 color;
+
+			layout(location = 0) out vec4 Color;
+
+			void main ()
+			{
+			    Color = color;
+			}
+		)"
+	);
 }
 
 
@@ -183,6 +223,23 @@ void region_render ( const WindowInfo& window, Region *region )
 			glBindVertexArray( cm.waterMesh.vao ); GLCALL;
 			glBindTexture( GL_TEXTURE_2D, region->chunkMeshTexture ); GLCALL;
 			glDrawElements( GL_TRIANGLES, cm.waterMesh.layeredIndexCount[indexOffset], GL_UNSIGNED_INT, 0 ); GLCALL;
+		}
+	}
+
+	glClear( GL_DEPTH_BUFFER_BIT ); GLCALL;
+	glUseProgram( debugGrid_shader ); GLCALL;
+	set_uniform_mat4( debugGrid_shader, "projection", &region->projection );
+	set_uniform_mat4( debugGrid_shader, "view", &region->camera );
+	if ( region->debug_drawDebugGrid ) 
+	{
+		if ( debugGridMeshGenerated )
+		{
+			render_debug_grid_mesh( region->viewHeight );
+		}
+		else
+		{
+			generate_debug_grid_mesh( region );
+			debugGridMeshGenerated = true;
 		}
 	}
 }
@@ -346,4 +403,72 @@ void region_issue_command ( Region *region, Region_Command command )
 	{
 		std::cout << "ERROR: Region Command was not able to be issued.\n";
 	}
+}
+
+
+
+static void generate_debug_grid_mesh ( Region *region )
+{
+	std::vector<vec2> vertexData;
+	std::vector<unsigned int> indexData;
+
+	const vec2 xDir { -1, 18.0f/27.0f };
+	const vec2 yDir {  1, 18.0f/27.0f };
+
+	unsigned int curIndex = 0;
+	for ( int i = 0; i <= region->length*region->chunkLength; ++i )
+	{
+		vertexData.emplace_back( xDir*i*27 );
+		vertexData.emplace_back( xDir*i*27 + yDir*region->width*region->chunkWidth*27 );
+
+		indexData.emplace_back( curIndex );
+		indexData.emplace_back( curIndex + 1 );
+		curIndex += 2;
+	}
+	for ( int i = 0; i <= region->width*region->chunkWidth; ++i )
+	{
+		vertexData.emplace_back( yDir*i*27 );
+		vertexData.emplace_back( yDir*i*27 + xDir*region->length*region->chunkLength*27 );
+
+		indexData.emplace_back( curIndex );
+		indexData.emplace_back( curIndex + 1 );
+		curIndex += 2;
+	}
+
+	if ( debugGrid_vao == 0 ) { glGenVertexArrays( 1, &debugGrid_vao ); GLCALL; }
+	if ( debugGrid_vbo == 0 ) { glGenBuffers( 1, &debugGrid_vbo ); GLCALL; }
+	if ( debugGrid_ibo == 0 ) { glGenBuffers( 1, &debugGrid_ibo ); GLCALL; }
+
+	glBindVertexArray( debugGrid_vao ); GLCALL;
+		
+			glBindBuffer( GL_ARRAY_BUFFER, debugGrid_vbo ); GLCALL;
+				glBufferData( GL_ARRAY_BUFFER, vertexData.size() * sizeof( vec2 ), vertexData.data(), GL_STATIC_DRAW ); GLCALL;
+			
+				GLint posAttrib = glGetAttribLocation( region->shader, "position" ); GLCALL;
+				glVertexAttribPointer( posAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0 ); GLCALL;
+				glEnableVertexAttribArray( posAttrib ); GLCALL;
+
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, debugGrid_ibo ); GLCALL;
+				glBufferData( GL_ELEMENT_ARRAY_BUFFER, indexData.size() * sizeof(unsigned int), indexData.data(), GL_STATIC_DRAW ); GLCALL;
+		
+		debugGrid_indexCount = indexData.size();
+
+	glBindVertexArray( 0 ); GLCALL;
+}
+
+static void render_debug_grid_mesh ( float verticalOffset )
+{
+	auto mtx = translate(mat4(1), vec3(0, verticalOffset*30, 0));
+	set_uniform_mat4( debugGrid_shader, "model", &mtx );
+	set_uniform_vec4( debugGrid_shader, "color", vec4(1, 0, 0, 1) );
+	glBindVertexArray( debugGrid_vao ); GLCALL;
+	glDrawElements( GL_LINES, debugGrid_indexCount, GL_UNSIGNED_INT, 0 ); GLCALL;
+	mtx = translate(mat4(1), vec3(0, verticalOffset*30+7, 0));
+	set_uniform_mat4( debugGrid_shader, "model", &mtx );
+	set_uniform_vec4( debugGrid_shader, "color", vec4(1, 1, 0, 1) );
+	glDrawElements( GL_LINES, debugGrid_indexCount, GL_UNSIGNED_INT, 0 ); GLCALL;
+	mtx = translate(mat4(1), vec3(0, verticalOffset*30+30, 0));
+	set_uniform_mat4( debugGrid_shader, "model", &mtx );
+	set_uniform_vec4( debugGrid_shader, "color", vec4(1, 0, 1, 1) );
+	glDrawElements( GL_LINES, debugGrid_indexCount, GL_UNSIGNED_INT, 0 ); GLCALL;
 }
