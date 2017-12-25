@@ -1,5 +1,5 @@
-#ifndef _GL_HPP_
-#define _GL_HPP_
+#ifndef _OPENGL_HPP_
+#define _OPENGL_HPP_
 
 #ifdef PLATFORM_OSX
 	#include <OpenGL/gl3.h>

@@ -1,7 +1,7 @@
 #ifndef _SHADER_HPP_
 #define _SHADER_HPP_
 
-#include "math.hpp"
+#include "math/math.hpp"
 
 unsigned int load_shader ( const std::string& vertexShader, const std::string& fragementShader );
 void delete_shader( unsigned int shader );

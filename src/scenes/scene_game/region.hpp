@@ -1,12 +1,12 @@
-#ifndef __REGION_HPP_
-#define __REGION_HPP_
+#ifndef _REGION_HPP_
+#define _REGION_HPP_
 
 #include <vector>
 #include <mutex>
 
 #include "../../platform/platform.h"
 #include "../../platform/opengl.hpp"
-#include "../../math.hpp"
+#include "../../math/math.hpp"
 
 enum Occlusion
 {
@@ -60,7 +60,7 @@ struct Chunk_Data
 	unsigned int wallBegin, wallEnd;
 	unsigned int wallNonHiddenBegin, wallNonHiddenEnd;
 
-	unsigned int *water = nullptr;
+	unsigned char *water = nullptr;
 	unsigned int waterBegin, waterEnd;
 	unsigned int waterNonHiddenBegin, waterNonHiddenEnd;
 };
@@ -116,6 +116,7 @@ struct Region
 	Chunk_Data *chunks = nullptr;
 	unsigned int length, width, height;
 	unsigned int chunkLength, chunkWidth, chunkHeight;
+	unsigned int worldLength, worldWidth, worldHeight;
 
 	std::mutex chunksNeedingMeshUpdate_mutex;
 	unsigned int *chunksNeedingMeshUpdate = nullptr;
@@ -157,9 +158,6 @@ struct Region
 	mat4 projection;
 	mat4 camera;
 	int viewHeight;
-
-	// DEBUG:
-	bool debug_drawDebugGrid;
 };
 
 ///////////////////

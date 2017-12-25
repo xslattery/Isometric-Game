@@ -1,5 +1,5 @@
-#ifndef _GAME_MANAGER_H_
-#define _GAME_MANAGER_H_
+#ifndef _PLATFORM_H_
+#define _PLATFORM_H_
 
 #include "../input.hpp"
 

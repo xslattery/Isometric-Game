@@ -1,8 +1,8 @@
-#ifndef _MAIN_MENU_SCENE_HPP_
-#define _MAIN_MENU_SCENE_HPP_
+#ifndef _SCENE_MAIN_MENU_HPP_
+#define _SCENE_MAIN_MENU_HPP_
 
 #include "../text.hpp"
-#include "../math.hpp"
+#include "../math/math.hpp"
 
 #include "scene.hpp"
 

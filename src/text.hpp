@@ -5,7 +5,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include "math.hpp"
+#include "math/math.hpp"
 
 struct Glyph 
 {

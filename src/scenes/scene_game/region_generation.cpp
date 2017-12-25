@@ -324,7 +324,7 @@ inline Chunk_Data* region_get_chunk ( Region *region, int x, int y, int z )
 
 inline unsigned int region_get_water ( Region *region, int x, int y, int z )
 {
-	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return 0;
+	if ( x < 0 || x >= region->worldLength || y < 0 || y >= region->worldWidth || z < 0 || z >= region->worldHeight ) return 0;
 	unsigned int cx = x / region->chunkLength;
 	unsigned int cy = y / region->chunkWidth;
 	unsigned int cz = z / region->chunkHeight;
@@ -336,7 +336,7 @@ inline unsigned int region_get_water ( Region *region, int x, int y, int z )
 
 inline unsigned int region_get_floor ( Region *region, int x, int y, int z )
 {
-	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return 0;
+	if ( x < 0 || x >= region->worldLength || y < 0 || y >= region->worldWidth || z < 0 || z >= region->worldHeight ) return 0;
 	unsigned int cx = x / region->chunkLength;
 	unsigned int cy = y / region->chunkWidth;
 	unsigned int cz = z / region->chunkHeight;
@@ -368,7 +368,7 @@ static void build_water_mesh( Region *region, unsigned int chunk )
 	const vec2 wtl = { 0, 			1.0f-1.0f/512*68*4 };
 	const vec2 wbr = { 1.0f/512*54,	1.0f-1.0f/512*68*3 };
 
-	unsigned int *chunkDataWater = region->chunks[chunk].water;
+	unsigned char *chunkDataWater = region->chunks[chunk].water;
 
 	for ( unsigned int i = 0; i < region->chunkLength*region->chunkWidth*region->chunkHeight; ++i )
 	{
@@ -382,7 +382,7 @@ static void build_water_mesh( Region *region, unsigned int chunk )
 			float yy = iTemp / region->chunkLength;
 			float xx = iTemp % region->chunkLength;
 
-			if ( xx+ox != 0 && xx+ox != region->chunkLength*region->length-1 && yy+oy != 0 && yy+oy != region->chunkWidth*region->width-1 )
+			if ( xx+ox != 0 && xx+ox != region->worldLength-1 && yy+oy != 0 && yy+oy != region->worldWidth-1 )
 			{
 				if ( i + region->chunkLength*region->chunkWidth < region->chunkLength*region->chunkWidth*region->chunkHeight )
 				{

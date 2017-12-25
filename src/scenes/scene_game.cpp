@@ -3,8 +3,10 @@
 #include "../globals.hpp"
 #include "../shader.hpp"
 #include "../scenemanager.hpp"
+#include "../debug.hpp"
 
 #include "scene_game.hpp"
+
 
 //////////////////////////////////////
 // Main Thread - Methods:
@@ -111,13 +113,16 @@ void Game_Scene::render ( const WindowInfo& window )
 
 	region_render( window, &region );
 
-	glClear( GL_DEPTH_BUFFER_BIT ); GLCALL;
+	Debug::draw_region_layer_grid( &region );
+	Debug::draw_region_chunk_grid( &region );
 
+	glDisable( GL_DEPTH_TEST ); GLCALL;
 	glUseProgram( shader ); GLCALL;
 	set_uniform_mat4( shader, "projection", &projection );
 	set_uniform_mat4( shader, "view", &camera );
 	render_text_mesh( textMesh, shader );
 	render_text_mesh( generatingTextMesh, shader );
+	glEnable( GL_DEPTH_TEST ); GLCALL;
 }
 
 void Game_Scene::resize ( const WindowInfo& window )

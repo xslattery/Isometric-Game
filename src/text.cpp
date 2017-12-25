@@ -6,7 +6,6 @@
 #include <map>
 #include <vector>
 
-#include "math.hpp"
 #include "text.hpp"
 #include "shader.hpp"
 

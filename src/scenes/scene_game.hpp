@@ -1,8 +1,8 @@
-#ifndef _GAME_SCENE_HPP_
-#define _GAME_SCENE_HPP_
+#ifndef _SCENE_GAME_HPP_
+#define _SCENE_GAME_HPP_
 
 #include "../text.hpp"
-#include "../math.hpp"
+#include "../math/math.hpp"
 
 #include "scene.hpp"
 #include "scene_game/region.hpp"

@@ -5,7 +5,7 @@
 #endif
 #include <cmath>
 
-#include "../../perlin.hpp"
+#include "../../math/perlin.hpp"
 
 inline Chunk_Data* region_get_chunk ( Region *region, int x, int y, int z );
 inline unsigned int region_get_floor ( Region *region, int x, int y, int z );
@@ -61,7 +61,7 @@ static void process_commands ( Region *region )
 						{
 							for ( int cx = 0; cx < region->chunkLength; ++cx )
 							{
-								unsigned int* water = &chunk->water[ cx + cy*region->chunkLength + (region->chunkHeight-1)*region->chunkLength*region->chunkWidth ];
+								unsigned char *water = &chunk->water[ cx + cy*region->chunkLength + (region->chunkHeight-1)*region->chunkLength*region->chunkWidth ];
 								*water = 255; //rand()%256;
 								if ( *water > 0 ) region->waterThatNeedsUpdate.emplace_back( cx+(x*region->chunkLength), cy+(y*region->chunkWidth), (region->chunkHeight-1)+((region->height-1)*region->chunkHeight), x + y*region->length + (region->height-1)*region->length*region->width );
 							}
@@ -144,7 +144,7 @@ inline Chunk_Data* region_get_chunk ( Region *region, int x, int y, int z )
 
 inline unsigned int region_get_floor ( Region *region, int x, int y, int z )
 {
-	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return 0;
+	if ( x < 0 || x >= region->worldLength || y < 0 || y >= region->worldWidth || z < 0 || z >= region->worldHeight ) return 0;
 	unsigned int cx = x / region->chunkLength;
 	unsigned int cy = y / region->chunkWidth;
 	unsigned int cz = z / region->chunkHeight;
@@ -156,7 +156,7 @@ inline unsigned int region_get_floor ( Region *region, int x, int y, int z )
 
 inline unsigned int region_get_wall ( Region *region, int x, int y, int z )
 {
-	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return 0;
+	if ( x < 0 || x >= region->worldLength || y < 0 || y >= region->worldWidth || z < 0 || z >= region->worldHeight ) return 0;
 	unsigned int cx = x / region->chunkLength;
 	unsigned int cy = y / region->chunkWidth;
 	unsigned int cz = z / region->chunkHeight;
@@ -168,7 +168,7 @@ inline unsigned int region_get_wall ( Region *region, int x, int y, int z )
 
 inline unsigned int region_get_water ( Region *region, int x, int y, int z )
 {
-	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return 0;
+	if ( x < 0 || x >= region->worldLength || y < 0 || y >= region->worldWidth || z < 0 || z >= region->worldHeight ) return 0;
 	unsigned int cx = x / region->chunkLength;
 	unsigned int cy = y / region->chunkWidth;
 	unsigned int cz = z / region->chunkHeight;
@@ -180,7 +180,7 @@ inline unsigned int region_get_water ( Region *region, int x, int y, int z )
 
 inline void region_set_floor ( Region *region, int x, int y, int z, unsigned int floor )
 {
-	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return;
+	if ( x < 0 || x >= region->worldLength || y < 0 || y >= region->worldWidth || z < 0 || z >= region->worldHeight ) return;
 	unsigned int cx = x / region->chunkLength;
 	unsigned int cy = y / region->chunkWidth;
 	unsigned int cz = z / region->chunkHeight;
@@ -192,7 +192,7 @@ inline void region_set_floor ( Region *region, int x, int y, int z, unsigned int
 
 inline void region_set_wall ( Region *region, int x, int y, int z, unsigned int wall )
 {
-	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return;
+	if ( x < 0 || x >= region->worldLength || y < 0 || y >= region->worldWidth || z < 0 || z >= region->worldHeight ) return;
 	unsigned int cx = x / region->chunkLength;
 	unsigned int cy = y / region->chunkWidth;
 	unsigned int cz = z / region->chunkHeight;
@@ -204,7 +204,7 @@ inline void region_set_wall ( Region *region, int x, int y, int z, unsigned int 
 
 inline void region_set_water ( Region *region, int x, int y, int z, unsigned int water )
 {
-	if ( x < 0 || x >= region->chunkLength*region->length || y < 0 || y >= region->chunkWidth*region->width || z < 0 || z >= region->chunkHeight*region->height ) return;
+	if ( x < 0 || x >= region->worldLength || y < 0 || y >= region->worldWidth || z < 0 || z >= region->worldHeight ) return;
 	unsigned int cx = x / region->chunkLength;
 	unsigned int cy = y / region->chunkWidth;
 	unsigned int cz = z / region->chunkHeight;
@@ -223,18 +223,18 @@ static void simulate_water ( Region *region, std::vector<unsigned int> &newChunk
 		std::vector<vec4> newWaterThatNeedsUpdate;
 
 		static unsigned int lowestWater = 0;
-		static unsigned int highestWater = region->length*region->chunkLength*region->width*region->chunkWidth*region->height*region->chunkHeight;
+		static unsigned int highestWater = region->worldLength*region->worldWidth*region->worldHeight;
 		for ( unsigned int i = lowestWater; i < highestWater; ++i )
 		{
 			region->updatedWaterBitset[ i ] = false;
 		}
 		
-		unsigned int newLowestWater = region->length*region->chunkLength*region->width*region->chunkWidth*region->height*region->chunkHeight;
+		unsigned int newLowestWater = region->worldLength*region->worldWidth*region->worldHeight;
 		unsigned int newHighestWater = 0;
 
 		for ( auto p : region->waterThatNeedsUpdate )
 		{
-			unsigned int bitPos = p.x + p.y*region->length*region->chunkLength + p.z*region->length*region->chunkLength*region->width*region->chunkWidth;
+			unsigned int bitPos = p.x + p.y*region->worldLength + p.z*region->worldLength*region->worldWidth;
 			if ( region->updatedWaterBitset[ bitPos ] == true ) continue;
 			region->updatedWaterBitset[ bitPos ] = true;
 			if ( bitPos < newLowestWater ) newLowestWater = bitPos;
@@ -269,9 +269,9 @@ static void simulate_water ( Region *region, std::vector<unsigned int> &newChunk
 			if ( sameDepth > 0 )
 			{
 				int sides = 1;
-				int xpw = region_get_wall(region, p.x+1, p.y, p.z ); if ( p.x+1 == region->length*region->chunkLength ) xpw = Wall::WALL_STONE;
+				int xpw = region_get_wall(region, p.x+1, p.y, p.z ); if ( p.x+1 == region->worldLength ) xpw = Wall::WALL_STONE;
 				int xnw = region_get_wall(region, p.x-1, p.y, p.z ); if ( p.x-1 < 0 ) xnw = Wall::WALL_STONE;
-				int ypw = region_get_wall(region, p.x, p.y+1, p.z ); if ( p.y+1 == region->width*region->chunkWidth ) ypw = Wall::WALL_STONE;
+				int ypw = region_get_wall(region, p.x, p.y+1, p.z ); if ( p.y+1 == region->worldWidth ) ypw = Wall::WALL_STONE;
 				int ynw = region_get_wall(region, p.x, p.y-1, p.z ); if ( p.y-1 < 0) ynw = Wall::WALL_STONE;
 				if ( xpw == Wall::WALL_NONE ) sides++;
 				if ( xnw == Wall::WALL_NONE ) sides++;
@@ -614,9 +614,9 @@ void region_generate ( Region *region )
 					{
 						for ( int cx = 0; cx < region->chunkLength; ++cx )
 						{
-							unsigned int* floor = &chunk->floor[ cx + cy*region->chunkLength + cz*region->chunkLength*region->chunkWidth ];
-							unsigned int* wall = &chunk->wall[ cx + cy*region->chunkLength + cz*region->chunkLength*region->chunkWidth ];
-							unsigned int* water = &chunk->water[ cx + cy*region->chunkLength + cz*region->chunkLength*region->chunkWidth ];
+							unsigned int *floor = &chunk->floor[ cx + cy*region->chunkLength + cz*region->chunkLength*region->chunkWidth ];
+							unsigned int *wall = &chunk->wall[ cx + cy*region->chunkLength + cz*region->chunkLength*region->chunkWidth ];
+							unsigned char *water = &chunk->water[ cx + cy*region->chunkLength + cz*region->chunkLength*region->chunkWidth ];
 							
 							*floor = Floor::FLOOR_NONE;
 							*wall = Wall::WALL_NONE;
@@ -626,7 +626,7 @@ void region_generate ( Region *region )
 							if ( genHeight > cz+(z*region->chunkHeight) ) *floor = Floor::FLOOR_STONE;
 							if ( genHeight-1 > cz+(z*region->chunkHeight) ) *wall = Wall::WALL_STONE;
 							
-							if ( cz+(z*region->chunkHeight) == region->height*region->chunkHeight-1 ) *water = 255; //rand()%256;
+							if ( cz+(z*region->chunkHeight) == region->worldHeight-1 ) *water = 255; //rand()%256;
 							if ( *water > 0 )region->waterThatNeedsUpdate.emplace_back( cx+(x*region->chunkLength), cy+(y*region->chunkWidth), cz+(z*region->chunkHeight), x + y*region->length + z*region->length*region->width );
 						}
 					}
@@ -652,37 +652,40 @@ void region_generate ( Region *region )
 						{
 							unsigned int* floor = &chunk->floor[ cx + cy*region->chunkLength + cz*region->chunkLength*region->chunkWidth ];
 							unsigned int* wall = &chunk->wall[ cx + cy*region->chunkLength + cz*region->chunkLength*region->chunkWidth ];
-							unsigned int* water = &chunk->water[ cx + cy*region->chunkLength + cz*region->chunkLength*region->chunkWidth ];
 							
 							int xx = cx+(x*region->chunkLength);
 							int yy = cy+(y*region->chunkWidth);
 							int zz = cz+(z*region->chunkHeight);
 
+							// TODO(Xavier): (2017.12.25)
+							// Cleanup this occlusion code.
 							if ( *floor != Floor::FLOOR_NONE )
 							{
 								if ( region_get_floor(region, xx-1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy-1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE )
-									*floor |= Occlusion::N_HIDDEN;
-								if ( region_get_floor(region, xx+1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy-1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE )
-									*floor |= Occlusion::E_HIDDEN;
-								if ( region_get_floor(region, xx+1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy+1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE )
-									*floor |= Occlusion::S_HIDDEN;
-								if ( region_get_floor(region, xx-1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy+1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE )
-									*floor |= Occlusion::W_HIDDEN;
+									if ( region_get_floor(region, xx+1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy-1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE )
+										if ( region_get_floor(region, xx+1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy+1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE )
+											if ( region_get_floor(region, xx-1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy+1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE )
+											{
+												*floor |= Occlusion::N_HIDDEN;
+												*floor |= Occlusion::E_HIDDEN;
+												*floor |= Occlusion::S_HIDDEN;
+												*floor |= Occlusion::W_HIDDEN;
+											}
 							}
 
 							if ( *wall != Wall::WALL_NONE )
 							{
 								if ( region_get_wall(region, xx-1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy-1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE )
-									*wall |= Occlusion::N_HIDDEN;
-								if ( region_get_wall(region, xx+1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy-1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE )
-									*wall |= Occlusion::E_HIDDEN;
-								if ( region_get_wall(region, xx+1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy+1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE )
-									*wall |= Occlusion::S_HIDDEN;
-								if ( region_get_wall(region, xx-1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy+1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE )
-									*wall |= Occlusion::W_HIDDEN;
+									if ( region_get_wall(region, xx+1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy-1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE )
+										if ( region_get_wall(region, xx+1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy+1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE )
+											if ( region_get_wall(region, xx-1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy+1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE )
+											{
+												*wall |= Occlusion::N_HIDDEN;
+												*wall |= Occlusion::E_HIDDEN;
+												*wall |= Occlusion::S_HIDDEN;
+												*wall |= Occlusion::W_HIDDEN;
+											}
 							}
-
-							*water |= 0;
 						}
 					}
 				}
