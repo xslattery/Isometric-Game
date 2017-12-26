@@ -110,7 +110,7 @@ void Game_Scene::render ( const WindowInfo& window )
 
 	region_render( window, &region );
 
-	Debug::draw_region_layer_grid( &region );
+	// Debug::draw_region_layer_grid( &region );
 	Debug::draw_region_chunk_grid( &region );
 
 	glDisable( GL_DEPTH_TEST ); GLCALL;

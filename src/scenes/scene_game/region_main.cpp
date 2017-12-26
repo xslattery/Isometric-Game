@@ -152,11 +152,111 @@ void region_cleanup ( Region *region )
 }
 
 
+static uint32_t framebuffer = 0;
+static uint32_t texColorBuffer = 0;
+static uint32_t rbo = 0;
+static bool framebufferGenerated = false;
+static uint32_t quadVAO = 0, quadVBO = 0;
+static uint32_t framebufferShader = 0;
+
 //////////////////////////////////
 // This function uploads then
 // renders the regions meshes.
 void region_render ( const WindowInfo& window, Region *region )
 {
+	if ( !framebufferGenerated ) {
+		framebufferGenerated = true;
+
+		glGenFramebuffers( 1, &framebuffer ); GLCALL;
+		glBindFramebuffer( GL_FRAMEBUFFER, framebuffer ); GLCALL;
+
+		// generate texture
+		glGenTextures( 1, &texColorBuffer ); GLCALL;
+		glBindTexture( GL_TEXTURE_2D, texColorBuffer ); GLCALL;
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, window.hidpi_width, window.hidpi_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL ); GLCALL;
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST  ); GLCALL;
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST ); GLCALL;
+		glBindTexture( GL_TEXTURE_2D, 0 ); GLCALL;
+
+		// attach it to currently bound framebuffer object
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0 ); GLCALL;
+
+		glGenRenderbuffers( 1, &rbo ); GLCALL;
+		glBindRenderbuffer( GL_RENDERBUFFER, rbo ); GLCALL;
+		glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window.hidpi_width, window.hidpi_height ); GLCALL; 
+		glBindRenderbuffer( GL_RENDERBUFFER, 0 ); GLCALL;
+
+		glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo ); GLCALL;
+
+		if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+			std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+		GLCALL;
+		
+		glBindFramebuffer( GL_FRAMEBUFFER, 0 ); GLCALL;
+
+		// screen quad VAO
+		float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+	        // positions   // texCoords
+	        -1.0f,  1.0f,  0.0f, 1.0f,
+	        -1.0f, -1.0f,  0.0f, 0.0f,
+	         1.0f, -1.0f,  1.0f, 0.0f,
+
+	        -1.0f,  1.0f,  0.0f, 1.0f,
+	         1.0f, -1.0f,  1.0f, 0.0f,
+	         1.0f,  1.0f,  1.0f, 1.0f
+	    };
+	    glGenVertexArrays(1, &quadVAO); GLCALL;
+	    glGenBuffers(1, &quadVBO); GLCALL;
+	    glBindVertexArray(quadVAO); GLCALL;
+	    glBindBuffer(GL_ARRAY_BUFFER, quadVBO); GLCALL;
+	    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW); GLCALL;
+	    glEnableVertexAttribArray(0); GLCALL;
+	    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0); GLCALL;
+	    glEnableVertexAttribArray(1); GLCALL;
+	    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float))); GLCALL;
+
+	    // Shader:
+	    framebufferShader = load_shader(
+			R"(
+				#version 330 core
+				layout (location = 0) in vec2 aPos;
+				layout (location = 1) in vec2 aTexCoords;
+
+				out vec2 TexCoords;
+
+				void main()
+				{
+				    gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0); 
+				    TexCoords = aTexCoords;
+				}
+			)",
+			R"(
+				#version 330 core
+				out vec4 FragColor;
+				  
+				in vec2 TexCoords;
+
+				uniform sampler2D screenTexture;
+
+				void main()
+				{
+					vec4 color = texture(screenTexture, TexCoords);
+					if ( color.a > 0 )
+					    FragColor = color;
+					else
+						FragColor = vec4(0, 0, 0, 0);
+				}
+			)"
+		);
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer); GLCALL;
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f); GLCALL;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); GLCALL;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0); GLCALL;
+
+	glClearColor( 0.5f, 0.6f, 0.7f, 1.0f ); GLCALL;
+
 	region_upload_new_meshes( region );
 
 	if ( region->viewHeight < 0 ) region->viewHeight = 0;
@@ -231,26 +331,39 @@ void region_render ( const WindowInfo& window, Region *region )
 		}
 
 		if ( cm.waterMesh.vao != 0 && cm.waterMesh.indexCount != 0 ) {
-			auto mtx = translate(mat4(1), vec3(0));
-			set_uniform_mat4( region->shader, "model", &mtx );
-			glBindTexture( GL_TEXTURE_2D, region->chunkMeshTexture ); GLCALL;
-			glBindVertexArray( cm.waterMesh.vao ); GLCALL;
-			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.waterMesh.ibo ); GLCALL;
+			glBindFramebuffer( GL_FRAMEBUFFER, framebuffer ); GLCALL;
+			glDisable( GL_BLEND ); GLCALL;
 
-			uint32_t indexStart = 0;
-			uint32_t indexEnd = cm.waterMesh.layeredIndexCount[indexOffsetTop];
-			if ( indexOffsetBottom >= 0 ) {
-				indexStart = cm.waterMesh.layeredIndexCount[indexOffsetBottom];
-				indexEnd = cm.waterMesh.layeredIndexCount[indexOffsetTop] - indexStart;
-			}
+				auto mtx = translate(mat4(1), vec3(0));
+				set_uniform_mat4( region->shader, "model", &mtx );
+				glBindTexture( GL_TEXTURE_2D, region->chunkMeshTexture ); GLCALL;
+				glBindVertexArray( cm.waterMesh.vao ); GLCALL;
+				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.waterMesh.ibo ); GLCALL;
 
-			if ( indexEnd+indexStart > cm.waterMesh.indexCount ) indexEnd = cm.waterMesh.indexCount-indexStart;
+				uint32_t indexStart = 0;
+				uint32_t indexEnd = cm.waterMesh.layeredIndexCount[indexOffsetTop];
+				if ( indexOffsetBottom >= 0 ) {
+					indexStart = cm.waterMesh.layeredIndexCount[indexOffsetBottom];
+					indexEnd = cm.waterMesh.layeredIndexCount[indexOffsetTop] - indexStart;
+				}
 
-			glDrawElements( GL_TRIANGLES, indexEnd, GL_UNSIGNED_INT, (void*)(indexStart*sizeof(uint32_t)) ); GLCALL;
-			glBindVertexArray( 0 ); GLCALL;
-			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
+				if ( indexEnd+indexStart > cm.waterMesh.indexCount ) indexEnd = cm.waterMesh.indexCount-indexStart;
+
+				glDrawElements( GL_TRIANGLES, indexEnd, GL_UNSIGNED_INT, (void*)(indexStart*sizeof(uint32_t)) ); GLCALL;
+				glBindVertexArray( 0 ); GLCALL;
+				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
+
+			glEnable( GL_BLEND ); GLCALL;
+			glBindFramebuffer( GL_FRAMEBUFFER, 0 ); GLCALL;
 		}
 	}
+
+	glDisable( GL_DEPTH_TEST ); GLCALL;
+	glUseProgram( framebufferShader ); GLCALL;
+    glBindVertexArray( quadVAO ); GLCALL;
+    glBindTexture( GL_TEXTURE_2D, texColorBuffer ); GLCALL;
+    glDrawArrays( GL_TRIANGLES, 0, 6 );
+    glEnable( GL_DEPTH_TEST ); GLCALL;
 }
 
 
@@ -260,6 +373,16 @@ void region_render ( const WindowInfo& window, Region *region )
 void region_resize_viewport ( const WindowInfo& window, Region *region )
 {
 	region->projection = orthographic_projection( -window.height/2*region->projectionScale, window.height/2*region->projectionScale, -window.width/2*region->projectionScale, window.width/2*region->projectionScale, 0.1f, 5000.0f );
+
+	glBindTexture( GL_TEXTURE_2D, texColorBuffer ); GLCALL;
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, window.hidpi_width, window.hidpi_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL ); GLCALL;
+	glBindTexture( GL_TEXTURE_2D, 0 ); GLCALL;
+
+	// TODO(Xavier): (2017.12.27)
+	// This may be leaking memory, it may be safer to just recreate the framebuffer.
+	glBindRenderbuffer( GL_RENDERBUFFER, rbo ); GLCALL;
+	glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window.hidpi_width, window.hidpi_height ); GLCALL; 
+	glBindRenderbuffer( GL_RENDERBUFFER, 0 ); GLCALL;
 }
 
 
