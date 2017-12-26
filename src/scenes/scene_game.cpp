@@ -85,7 +85,9 @@ void Game_Scene::render ( const WindowInfo& window )
 		"\nS: " + std::to_string(region.projectionScale) + 
 		"\nL: " + std::to_string(region.length) + " W: " + std::to_string(region.width) + " H: " + std::to_string(region.height) +
 		"\nCL: " + std::to_string((int)region.chunkLength) + " CW: " + std::to_string((int)region.chunkWidth) + " CH: " + std::to_string((int)region.chunkHeight) +
-		"\nWBU: " + std::to_string(region.numberOfWaterBeingUpdated)
+		"\nWBU: " + std::to_string(region.numberOfWaterBeingUpdated) +
+		"\n\nVH: " + std::to_string(region.viewHeight) +
+		"\nVD: " + std::to_string(region.viewDepth)
 		
 		).c_str(), textMesh, packedGlyphTexture, shader );
 
@@ -173,6 +175,11 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 			region.viewHeight++;
 	}
 
+	if ( get_key( input, Key::Key_R ) )
+		region.viewDepth--;
+	if ( get_key( input, Key::Key_T ) )
+		region.viewDepth++;
+
 	if ( get_key_down( input, Key::Key_J ) )
 		region_issue_command( &region, {Region_Command_Type::ROTATE_RIGHT} );
 	if ( get_key_down( input, Key::Key_H ) )
@@ -180,6 +187,9 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 
 	if ( get_key_down( input, Key::Key_M ) )
 		region_issue_command( &region, {Region_Command_Type::ADD_WATER_WAVE} );
+
+	if ( get_key_down( input, Key::Key_V ) )
+		region.halfHeight = !region.halfHeight;
 }
 
 //////////////////////////////////////

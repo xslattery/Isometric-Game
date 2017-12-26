@@ -154,10 +154,13 @@ struct Region
 
 	unsigned int shader;
 	unsigned int chunkMeshTexture;
+	unsigned int chunkMeshTexture_halfHeight;
 	float projectionScale;
 	mat4 projection;
 	mat4 camera;
 	int viewHeight;
+	int viewDepth;
+	bool halfHeight;
 };
 
 ///////////////////

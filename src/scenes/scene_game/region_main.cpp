@@ -75,6 +75,8 @@ void region_init ( const WindowInfo& window, Region *region, unsigned int cl, un
 	region->generationNextChunk = 0;
 
 	region->viewHeight = ch * wh;
+	region->viewDepth = 72;
+	region->halfHeight = false;
 
 	region->updatedWaterBitset = std::vector<bool>( region->worldLength*region->worldWidth*region->worldHeight, false );
 
@@ -117,6 +119,9 @@ void region_init ( const WindowInfo& window, Region *region, unsigned int cl, un
 	region->chunkMeshTexture = 0;
 	load_texture( &region->chunkMeshTexture, "res/TileMap.png" );
 
+	region->chunkMeshTexture_halfHeight = 0;
+	load_texture( &region->chunkMeshTexture_halfHeight, "res/TileMapHalfHeight.png" );
+
 	region->projectionScale = 1.0f;
 	region->projection = orthographic_projection( -window.height/2*region->projectionScale, window.height/2*region->projectionScale, -window.width/2*region->projectionScale, window.width/2*region->projectionScale, 0.1f, 5000.0f );
 	region->camera = translate( mat4(1), -vec3(0, 0, 500) );
@@ -149,43 +154,102 @@ void region_render ( const WindowInfo& window, Region *region )
 	if ( region->viewHeight < 0 ) region->viewHeight = 0;
 	if ( region->viewHeight > region->worldHeight-1 ) region->viewHeight = region->worldHeight-1;
 
+	if ( region->viewDepth < 1 ) region->viewDepth = 1;
+	if ( region->viewDepth > region->worldHeight ) region->viewDepth = region->worldHeight;
+
 	glUseProgram( region->shader ); GLCALL;
 	set_uniform_mat4( region->shader, "projection", &region->projection );
 	set_uniform_mat4( region->shader, "view", &region->camera );
 	
 	for ( unsigned int i = 0; i < region->length*region->width*region->height; ++i )
 	{
-		auto& cm = region->chunkMeshes[i];
-
 		if ( i/(region->length*region->width)*region->chunkHeight > region->viewHeight ) continue;
-		unsigned int indexOffset = region->viewHeight - i/(region->length*region->width)*region->chunkHeight;
-		if ( indexOffset > region->chunkHeight - 1 ) indexOffset = region->chunkHeight - 1;
+		if ( (int)(i/(region->length*region->width)*region->chunkHeight + region->chunkHeight-1) <= (int)region->viewHeight - (int)region->viewDepth ) continue;
+		
+		unsigned int indexOffsetTop = region->viewHeight - i/(region->length*region->width)*region->chunkHeight;
+		if ( indexOffsetTop > region->chunkHeight - 1 ) indexOffsetTop = region->chunkHeight - 1;
+		
+		int indexOffsetBottom = 0;
+		if ( i/(region->length*region->width)*region->chunkHeight >= region->viewHeight - ((region->viewHeight)%region->chunkHeight) )
+		{
+			indexOffsetBottom = indexOffsetTop - region->viewDepth;
+		}
+		else
+		{
+			int chunkDifference = ((region->viewHeight - ((region->viewHeight)%region->chunkHeight) - i/(region->length*region->width)*region->chunkHeight) / region->chunkHeight) - 1;
+			int tmp = (region->viewDepth - (region->viewHeight%region->chunkHeight) - 1) - chunkDifference*region->chunkHeight;
+			if ( tmp <= 0 ) tmp = 10;
+			indexOffsetBottom = indexOffsetTop - tmp;
+		}
 
+		auto& cm = region->chunkMeshes[i];
 		if ( cm.floorMesh.vao != 0 && cm.floorMesh.indexCount != 0 )
 		{
 			auto mtx = translate(mat4(1), vec3(0));
 			set_uniform_mat4( region->shader, "model", &mtx );
-			glBindVertexArray( cm.floorMesh.vao ); GLCALL;
 			glBindTexture( GL_TEXTURE_2D, region->chunkMeshTexture ); GLCALL;
-			glDrawElements( GL_TRIANGLES, cm.floorMesh.layeredIndexCount[indexOffset], GL_UNSIGNED_INT, 0 ); GLCALL;
+			glBindVertexArray( cm.floorMesh.vao ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.floorMesh.ibo ); GLCALL;
+
+			unsigned int indexStart = 0;
+			unsigned int indexEnd = cm.floorMesh.layeredIndexCount[indexOffsetTop];
+			if ( indexOffsetBottom >= 0 )
+			{
+				indexStart = cm.floorMesh.layeredIndexCount[indexOffsetBottom];
+				indexEnd = cm.floorMesh.layeredIndexCount[indexOffsetTop] - indexStart;
+			}
+
+			if ( indexEnd+indexStart > cm.floorMesh.indexCount ) indexEnd = cm.floorMesh.indexCount-indexStart;
+
+			glDrawElements( GL_TRIANGLES, indexEnd, GL_UNSIGNED_INT, (void*)(indexStart*sizeof(unsigned int)) ); GLCALL;
+			glBindVertexArray( 0 ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
 		}
 
 		if ( cm.wallMesh.vao != 0 && cm.wallMesh.indexCount != 0 )
 		{
 			auto mtx = translate(mat4(1), vec3(0));
 			set_uniform_mat4( region->shader, "model", &mtx );
-			glBindVertexArray( cm.wallMesh.vao ); GLCALL;
 			glBindTexture( GL_TEXTURE_2D, region->chunkMeshTexture ); GLCALL;
-			glDrawElements( GL_TRIANGLES, cm.wallMesh.layeredIndexCount[indexOffset], GL_UNSIGNED_INT, 0 ); GLCALL;
+			glBindVertexArray( cm.wallMesh.vao ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.wallMesh.ibo ); GLCALL;
+
+			unsigned int indexStart = 0;
+			unsigned int indexEnd = cm.wallMesh.layeredIndexCount[indexOffsetTop];
+			if ( indexOffsetBottom >= 0 )
+			{
+				indexStart = cm.wallMesh.layeredIndexCount[indexOffsetBottom];
+				indexEnd = cm.wallMesh.layeredIndexCount[indexOffsetTop] - indexStart;
+			}
+
+			if ( indexEnd+indexStart > cm.wallMesh.indexCount ) indexEnd = cm.wallMesh.indexCount-indexStart;
+
+			glDrawElements( GL_TRIANGLES, indexEnd, GL_UNSIGNED_INT, (void*)(indexStart*sizeof(unsigned int)) ); GLCALL;
+			glBindVertexArray( 0 ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
 		}
 
 		if ( cm.waterMesh.vao != 0 && cm.waterMesh.indexCount != 0 )
 		{
 			auto mtx = translate(mat4(1), vec3(0));
 			set_uniform_mat4( region->shader, "model", &mtx );
-			glBindVertexArray( cm.waterMesh.vao ); GLCALL;
 			glBindTexture( GL_TEXTURE_2D, region->chunkMeshTexture ); GLCALL;
-			glDrawElements( GL_TRIANGLES, cm.waterMesh.layeredIndexCount[indexOffset], GL_UNSIGNED_INT, 0 ); GLCALL;
+			glBindVertexArray( cm.waterMesh.vao ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.waterMesh.ibo ); GLCALL;
+
+			unsigned int indexStart = 0;
+			unsigned int indexEnd = cm.waterMesh.layeredIndexCount[indexOffsetTop];
+			if ( indexOffsetBottom >= 0 )
+			{
+				indexStart = cm.waterMesh.layeredIndexCount[indexOffsetBottom];
+				indexEnd = cm.waterMesh.layeredIndexCount[indexOffsetTop] - indexStart;
+			}
+
+			if ( indexEnd+indexStart > cm.waterMesh.indexCount ) indexEnd = cm.waterMesh.indexCount-indexStart;
+
+			glDrawElements( GL_TRIANGLES, indexEnd, GL_UNSIGNED_INT, (void*)(indexStart*sizeof(unsigned int)) ); GLCALL;
+			glBindVertexArray( 0 ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
 		}
 	}
 }
@@ -220,12 +284,12 @@ static void upload_mesh ( Region *region, Chunk_Mesh_Data *meshData )
 					glBufferData( GL_ARRAY_BUFFER, meshData->vertexData.size() * sizeof( float ), meshData->vertexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
 				
 					GLint posAttrib = glGetAttribLocation( region->shader, "position" ); GLCALL;
-					glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0 ); GLCALL;
 					glEnableVertexAttribArray( posAttrib ); GLCALL;
+					glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0 ); GLCALL;
 
 					GLint texAttrib = glGetAttribLocation( region->shader, "textcoord" ); GLCALL;
-					glVertexAttribPointer( texAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12 ); GLCALL;
 					glEnableVertexAttribArray( texAttrib ); GLCALL;
+					glVertexAttribPointer( texAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12 ); GLCALL;
 
 				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.floorMesh.ibo ); GLCALL;
 					glBufferData( GL_ELEMENT_ARRAY_BUFFER, meshData->indexData.size() * sizeof(unsigned int), meshData->indexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
@@ -234,6 +298,8 @@ static void upload_mesh ( Region *region, Chunk_Mesh_Data *meshData )
 			cm.floorMesh.layeredIndexCount = std::move( meshData->layeredIndexCount );
 
 			glBindVertexArray( 0 ); GLCALL;
+			glBindBuffer( GL_ARRAY_BUFFER, 0 ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
 		}
 	}
 	else if ( meshData->type == Chunk_Mesh_Data_Type::WALL )
@@ -252,20 +318,22 @@ static void upload_mesh ( Region *region, Chunk_Mesh_Data *meshData )
 					glBufferData( GL_ARRAY_BUFFER, meshData->vertexData.size() * sizeof( float ), meshData->vertexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
 				
 					GLint posAttrib = glGetAttribLocation( region->shader, "position" ); GLCALL;
-					glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0 ); GLCALL;
 					glEnableVertexAttribArray( posAttrib ); GLCALL;
+					glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0 ); GLCALL;
 
 					GLint texAttrib = glGetAttribLocation( region->shader, "textcoord" ); GLCALL;
-					glVertexAttribPointer( texAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12 ); GLCALL;
 					glEnableVertexAttribArray( texAttrib ); GLCALL;
+					glVertexAttribPointer( texAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12 ); GLCALL;
 
 				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.wallMesh.ibo ); GLCALL;
 					glBufferData( GL_ELEMENT_ARRAY_BUFFER, meshData->indexData.size() * sizeof(unsigned int), meshData->indexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
-			
+
 			cm.wallMesh.indexCount = meshData->indexData.size();
 			cm.wallMesh.layeredIndexCount = std::move( meshData->layeredIndexCount );
 
 			glBindVertexArray( 0 ); GLCALL;
+			glBindBuffer( GL_ARRAY_BUFFER, 0 ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
 		}
 	}
 	else if ( meshData->type == Chunk_Mesh_Data_Type::WATER )
@@ -284,12 +352,12 @@ static void upload_mesh ( Region *region, Chunk_Mesh_Data *meshData )
 					glBufferData( GL_ARRAY_BUFFER, meshData->vertexData.size() * sizeof( float ), meshData->vertexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
 				
 					GLint posAttrib = glGetAttribLocation( region->shader, "position" ); GLCALL;
-					glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0 ); GLCALL;
 					glEnableVertexAttribArray( posAttrib ); GLCALL;
+					glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0 ); GLCALL;
 
 					GLint texAttrib = glGetAttribLocation( region->shader, "textcoord" ); GLCALL;
-					glVertexAttribPointer( texAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12 ); GLCALL;
 					glEnableVertexAttribArray( texAttrib ); GLCALL;
+					glVertexAttribPointer( texAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)12 ); GLCALL;
 
 				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.waterMesh.ibo ); GLCALL;
 					glBufferData( GL_ELEMENT_ARRAY_BUFFER, meshData->indexData.size() * sizeof(unsigned int), meshData->indexData.data(), GL_DYNAMIC_DRAW ); GLCALL;
@@ -298,6 +366,8 @@ static void upload_mesh ( Region *region, Chunk_Mesh_Data *meshData )
 			cm.waterMesh.layeredIndexCount = std::move( meshData->layeredIndexCount );
 
 			glBindVertexArray( 0 ); GLCALL;
+			glBindBuffer( GL_ARRAY_BUFFER, 0 ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
 		}
 	}
 	else
