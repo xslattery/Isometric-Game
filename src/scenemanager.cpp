@@ -1,7 +1,8 @@
 
-#include "scenemanager.hpp"
 #include "scenes/scene_mainmenu.hpp"
 #include "scenes/scene_game.hpp"
+
+#include "scenemanager.hpp"
 
 
 ///////////////////////////
@@ -57,8 +58,7 @@ void Scene_Manager::exit()
 void Scene_Manager::render_scene( const WindowInfo& window )
 {
 	if ( activeScene != nullptr ) { activeScene->render( window ); }
-	else
-	{
+	else {
 		// Because there is no acive scene the main scene is implied to be active:
 		if ( mainScene == nullptr ) { /* ERROR: There should be a main scene */ }
 		else { mainScene->render( window ); }
@@ -68,8 +68,7 @@ void Scene_Manager::render_scene( const WindowInfo& window )
 void Scene_Manager::resize_scene ( const WindowInfo& window )
 {
 	if ( activeScene != nullptr ) { activeScene->resize( window ); }
-	else
-	{
+	else {
 		// Because there is no acive scene the main scene is implied to be active:
 		if ( mainScene == nullptr ) { /* ERROR: There should be a main scene */ }
 		else { mainScene->resize( window ); }
@@ -79,8 +78,7 @@ void Scene_Manager::resize_scene ( const WindowInfo& window )
 void Scene_Manager::input_scene( const WindowInfo& window, InputInfo* input )
 {
 	if ( activeScene != nullptr ) { activeScene->input( window, input ); }
-	else
-	{
+	else {
 		// Because there is no acive scene the main scene is implied to be active:
 		if ( mainScene == nullptr ) { /* ERROR: There should be a main scene */ }
 		else { mainScene->input( window, input ); }
@@ -100,8 +98,7 @@ void Scene_Manager::change_scene( SceneType scene, const WindowInfo& window )
 	activeScene = nullptr;
 
 	if ( scene == SceneType::MainMenu ) { /* Do nothing because the main menu will become active by default */}
-	else if ( scene == SceneType::Game )
-	{
+	else if ( scene == SceneType::Game ) {
 		activeScene = load_game_scene( window );
 		simulationShouldUpdate = true;
 		generationShouldUpdate = true;
@@ -117,19 +114,16 @@ void Scene_Manager::enable_updating () { simulationShouldUpdate = true; generati
 // Simulation Thread:
 void Scene_Manager::simulate_scene()
 {
-	if ( simulationShouldUpdate )
-	{
+	if ( simulationShouldUpdate ) {
 		simulationStoppedUpdating = false;
 		if ( activeScene != nullptr ) { activeScene->simulate(); }
-		else
-		{
+		else {
 			// NOTE(Xavier): (2017.12.4)
 			// Because there is no acive scene this medhod
 			// does not need to do anything.
 		}
 	}
-	else
-	{
+	else {
 		simulationStoppedUpdating = true;
 	}
 }
@@ -138,16 +132,13 @@ void Scene_Manager::simulate_scene()
 // Generation Thread:
 bool Scene_Manager::generate_scene()
 {
-	if ( generationShouldUpdate )
-	{
+	if ( generationShouldUpdate ) {
 		generationStoppedUpdating = false;
-		if ( activeScene != nullptr )
-		{ 
+		if ( activeScene != nullptr ) { 
 			return activeScene->generate();
 		}
 	}
-	else
-	{
+	else {
 		generationStoppedUpdating = true;
 	}
 

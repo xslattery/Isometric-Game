@@ -6,22 +6,22 @@
 
 namespace Debug
 {
-	static unsigned int debugLine_shader = 0;
+	static uint32_t debugLine_shader = 0;
 	static void load_debug_line_shader ();
 
 	static bool debugGridMeshGenerated = false;
-	static unsigned int debugGrid_vao = 0;
-	static unsigned int debugGrid_vbo = 0;
-	static unsigned int debugGrid_ibo = 0;
-	static unsigned int debugGrid_indexCount = 0;
+	static uint32_t debugGrid_vao = 0;
+	static uint32_t debugGrid_vbo = 0;
+	static uint32_t debugGrid_ibo = 0;
+	static uint32_t debugGrid_indexCount = 0;
 	static void generate_debug_grid_mesh ( Region *region );
 	static void render_debug_grid_mesh ( float verticalOffset );
 
 	static bool debugChunkOutlineMeshGenerated = false;
-	static unsigned int debugChunkOutline_vao = 0;
-	static unsigned int debugChunkOutline_vbo = 0;
-	static unsigned int debugChunkOutline_ibo = 0;
-	static unsigned int debugChunkOutline_indexCount = 0;
+	static uint32_t debugChunkOutline_vao = 0;
+	static uint32_t debugChunkOutline_vbo = 0;
+	static uint32_t debugChunkOutline_ibo = 0;
+	static uint32_t debugChunkOutline_indexCount = 0;
 	static void generate_debug_chunk_outline_mesh ( Region *region );
 	static void render_debug_chunk_outline_mesh ();
 
@@ -34,12 +34,10 @@ namespace Debug
 		set_uniform_mat4( debugLine_shader, "projection", &region->projection );
 		set_uniform_mat4( debugLine_shader, "view", &region->camera );
 		
-		if ( debugGridMeshGenerated )
-		{
+		if ( debugGridMeshGenerated ) {
 			render_debug_grid_mesh( region->viewHeight );
 		}
-		else
-		{
+		else {
 			generate_debug_grid_mesh( region );
 			debugGridMeshGenerated = true;
 		}
@@ -56,12 +54,10 @@ namespace Debug
 		set_uniform_mat4( debugLine_shader, "projection", &region->projection );
 		set_uniform_mat4( debugLine_shader, "view", &region->camera );
 
-		if ( debugChunkOutlineMeshGenerated )
-		{
+		if ( debugChunkOutlineMeshGenerated ) {
 			render_debug_chunk_outline_mesh();
 		}
-		else
-		{
+		else {
 			generate_debug_chunk_outline_mesh( region );
 			debugChunkOutlineMeshGenerated = true;
 		}
@@ -81,8 +77,7 @@ namespace Debug
 				uniform mat4 view;
 				uniform mat4 model;
 
-				void main ()
-				{
+				void main () {
 				    gl_Position = projection * view * model * vec4(position, 0.0, 1.0);
 				}
 			)",
@@ -93,8 +88,7 @@ namespace Debug
 
 				layout(location = 0) out vec4 Color;
 
-				void main ()
-				{
+				void main () {
 				    Color = color;
 				}
 			)"
@@ -104,14 +98,13 @@ namespace Debug
 	static void generate_debug_grid_mesh ( Region *region )
 	{
 		std::vector<vec2> vertexData;
-		std::vector<unsigned int> indexData;
+		std::vector<uint32_t> indexData;
 
 		const vec2 xDir { -1, 18.0f/27.0f };
 		const vec2 yDir {  1, 18.0f/27.0f };
 
-		unsigned int curIndex = 0;
-		for ( int i = 0; i <= region->worldLength; ++i )
-		{
+		uint32_t curIndex = 0;
+		for ( int i = 0; i <= region->worldLength; ++i ) {
 			vertexData.emplace_back( xDir*i*27 );
 			vertexData.emplace_back( xDir*i*27 + yDir*region->worldWidth*27 );
 
@@ -119,8 +112,7 @@ namespace Debug
 			indexData.emplace_back( curIndex + 1 );
 			curIndex += 2;
 		}
-		for ( int i = 0; i <= region->worldWidth; ++i )
-		{
+		for ( int i = 0; i <= region->worldWidth; ++i ) {
 			vertexData.emplace_back( yDir*i*27 );
 			vertexData.emplace_back( yDir*i*27 + xDir*region->worldLength*27 );
 
@@ -143,7 +135,7 @@ namespace Debug
 					glEnableVertexAttribArray( posAttrib ); GLCALL;
 
 				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, debugGrid_ibo ); GLCALL;
-					glBufferData( GL_ELEMENT_ARRAY_BUFFER, indexData.size() * sizeof(unsigned int), indexData.data(), GL_STATIC_DRAW ); GLCALL;
+					glBufferData( GL_ELEMENT_ARRAY_BUFFER, indexData.size() * sizeof(uint32_t), indexData.data(), GL_STATIC_DRAW ); GLCALL;
 			
 			debugGrid_indexCount = indexData.size();
 
@@ -170,18 +162,15 @@ namespace Debug
 	static void generate_debug_chunk_outline_mesh ( Region *region )
 	{
 		std::vector<vec2> vertexData;
-		std::vector<unsigned int> indexData;
+		std::vector<uint32_t> indexData;
 
 		const vec2 xDir { -1, 18.0f/27.0f };
 		const vec2 yDir {  1, 18.0f/27.0f };
 
-		unsigned int curIndex = 0;
-		for ( int i = 0; i < region->length; ++i )
-		{
-			for ( int j = 0; j < region->width; ++j )
-			{
-				for ( int k = 0; k < region->height; ++k )
-				{
+		uint32_t curIndex = 0;
+		for ( int i = 0; i < region->length; ++i ) {
+			for ( int j = 0; j < region->width; ++j ) {
+				for ( int k = 0; k < region->height; ++k ) {
 					vertexData.emplace_back( yDir*region->chunkWidth*j*27 + xDir*region->chunkWidth*i*27 + vec2(0, region->chunkHeight*k*30) );
 					vertexData.emplace_back( xDir*region->chunkLength*27 + yDir*region->chunkWidth*j*27 + xDir*region->chunkWidth*i*27 + vec2(0, region->chunkHeight*k*30) );
 					vertexData.emplace_back( yDir*region->chunkWidth*27 + yDir*region->chunkWidth*j*27 + xDir*region->chunkWidth*i*27 + vec2(0, region->chunkHeight*k*30) );
@@ -236,7 +225,7 @@ namespace Debug
 					glEnableVertexAttribArray( posAttrib ); GLCALL;
 
 				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, debugChunkOutline_ibo ); GLCALL;
-					glBufferData( GL_ELEMENT_ARRAY_BUFFER, indexData.size() * sizeof(unsigned int), indexData.data(), GL_STATIC_DRAW ); GLCALL;
+					glBufferData( GL_ELEMENT_ARRAY_BUFFER, indexData.size() * sizeof(uint32_t), indexData.data(), GL_STATIC_DRAW ); GLCALL;
 			
 			debugChunkOutline_indexCount = indexData.size();
 

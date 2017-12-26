@@ -27,8 +27,7 @@ void Game_Scene::init( const WindowInfo& window )
 			out vec2 TexCoord;
 			out vec4 inColor;
 
-			void main ()
-			{
+			void main () {
 			    gl_Position = projection * view * model * vec4(position, 1.0);
 			    TexCoord = texcoord;
 			    inColor = color;
@@ -45,8 +44,7 @@ void Game_Scene::init( const WindowInfo& window )
 
 			layout(location = 0) out vec4 Color;
 
-			void main ()
-			{
+			void main () {
 			    if ( texture(ourTexture, TexCoord).r == 0 ) discard;
 			    Color = vec4( inColor.xyz, texture(ourTexture, TexCoord).r );
 			    // Color = vec4( 1, 0, 0, 1 );
@@ -92,16 +90,13 @@ void Game_Scene::render ( const WindowInfo& window )
 		).c_str(), textMesh, packedGlyphTexture, shader );
 
 	static bool callOnce_0 = true;
-	if ( region.chunkDataGenerated && callOnce_0 )
-	{
+	if ( region.chunkDataGenerated && callOnce_0 ) {
 		callOnce_0 = false;
 		create_text_mesh( "Done.", generatingTextMesh, packedGlyphTexture, shader );
 	}
-	else if ( callOnce_0 )
-	{
+	else if ( callOnce_0 ) {
 		static unsigned int wheelCounter = 0;
-		if ( wheelCounter % 10 == 0 )
-		{
+		if ( wheelCounter % 10 == 0 ) {
 			static unsigned int wheelPos = 0;
 			char wheel[8] = { '|', '/', '-', '\\', '|', '/', '-', '\\', };
 			create_text_mesh( (std::string("Generating region: ") + wheel[wheelPos]).c_str(), generatingTextMesh, packedGlyphTexture, shader );
@@ -154,21 +149,18 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 	if ( get_key( input, Key::Key_D ) )
 		region.camera = translate( region.camera, -vec3(1,0,0)*window.deltaTime*speed );
 	
-	if ( input->mouseScrollDeltaY != 0 )
-	{
+	if ( input->mouseScrollDeltaY != 0 ) {
 		region.projectionScale = region.projectionScale + input->mouseScrollDeltaY*window.deltaTime;
 		if ( region.projectionScale <= 0.2 ) region.projectionScale = 0.2f;
 		region.projection = orthographic_projection( -window.height/2*region.projectionScale, window.height/2*region.projectionScale, -window.width/2*region.projectionScale, window.width/2*region.projectionScale, 0.1f, 5000.0f );
 	}
 
-	if ( get_key( input, Key::Key_Z ) )
-	{
+	if ( get_key( input, Key::Key_Z ) ) {
 		if ( get_key( input, Key::Key_Q ) )
 			region.viewHeight--;
 		if ( get_key( input, Key::Key_E ) )
 			region.viewHeight++;
-	} else
-	{
+	} else {
 		if ( get_key_down( input, Key::Key_Q ) )
 			region.viewHeight--;
 		if ( get_key_down( input, Key::Key_E ) )
@@ -207,7 +199,7 @@ bool Game_Scene::generate ()
 }
 
 //////////////////////////////////////
-// Destructor: ( Shouldn't care about threads )
+// Destructor: ( Run on main thread )
 Game_Scene::~Game_Scene ()
 {
 	delete_shader( shader );

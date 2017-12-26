@@ -11,6 +11,7 @@
 #include <mach/mach_time.h>
 #endif
 
+
 ///////////////////////////////////
 // Simulation Threaad:
 static std::atomic_bool terminateSimulationThread;
@@ -28,8 +29,7 @@ static void simulation_thread_entry ()
 	unsigned int simTime = 10;
 
 	std::size_t delta = 0;
-	while ( !terminateSimulationThread )
-	{
+	while ( !terminateSimulationThread ) {
 		#ifdef PLATFORM_OSX
 			startTime = mach_absolute_time();
 		#endif
@@ -74,8 +74,7 @@ static void generation_thread_entry ()
 	bool dontWait = false;
 
 	std::size_t delta = 0;
-	while ( !terminateGenerationThread )
-	{
+	while ( !terminateGenerationThread ) {
 		#ifdef PLATFORM_OSX
 			startTime = mach_absolute_time();
 		#endif
@@ -143,8 +142,7 @@ void input_and_render ( const WindowInfo& window, InputInfo *input )
 	
 	// NOTE(Xavier): (2017.11.29) This was done to fix the OpenGL error 1286 when
 	// the window is resizing.
-	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE )
-	{
+	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE ) {
 		Scene_Manager::render_scene( window );
 	}
 }

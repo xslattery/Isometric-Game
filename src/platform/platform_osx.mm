@@ -89,8 +89,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 
 	// Keep multisampling attributes at the start of the attribute 
 	// lists since code below assumes they are array elements 0 through 4:
-	NSOpenGLPixelFormatAttribute windowedAttrs[] = 
-	{
+	NSOpenGLPixelFormatAttribute windowedAttrs[] =  {
 		NSOpenGLPFAMultisample,
 		NSOpenGLPFASampleBuffers, samples ? 1u : 0,
 		NSOpenGLPFASamples, samples,
@@ -105,24 +104,20 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 
 	// Try to choose a supported pixel format:
 	NSOpenGLPixelFormat* pf = [[NSOpenGLPixelFormat alloc] initWithAttributes:windowedAttrs];
-	if (!pf)
-	{
+	if (!pf) {
 		bool valid = false;
-		while (!pf && samples > 0)
-		{
+		while (!pf && samples > 0) {
 			samples /= 2;
 			windowedAttrs[2] = samples ? 1 : 0;
 			windowedAttrs[4] = samples;
 			pf = [[NSOpenGLPixelFormat alloc] initWithAttributes:windowedAttrs];
-			if (pf)
-			{
+			if (pf) {
 				valid = true;
 				break;
 			}
 		}
 		
-		if (!valid)
-		{
+		if (!valid) {
 			NSLog(@"OpenGL pixel format not supported.");
 			return nil;
 		}
@@ -337,8 +332,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 {
 	[appLock lock];
 	
-		if ([event isARepeat] == NO)
-		{
+		if ([event isARepeat] == NO) {
 			unsigned int key = [event keyCode];
 			inputInfo.activeKeys[ key ] = true;
 			inputInfo.downKeys[ key ] = true;
@@ -364,14 +358,12 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 // method to clear input:
 - (void) clearInputAfterFrame
 {
-	for ( std::size_t i = 0; i < KEY_COUNT; ++i )
-	{
+	for ( std::size_t i = 0; i < KEY_COUNT; ++i ) {
 		inputInfo.downKeys[i] = false;
 		inputInfo.upKeys[i] = false;
 	}
 
-	for ( std::size_t i = 0; i < MOUSE_BUTTON_COUNT; ++i )
-	{
+	for ( std::size_t i = 0; i < MOUSE_BUTTON_COUNT; ++i ) {
 		inputInfo.downMouseButtons[i] = false;
 		inputInfo.upMouseButtons[i] = false;
 	}
@@ -469,8 +461,7 @@ static CVReturn GlobalDisplayLinkCallback ( CVDisplayLinkRef, const CVTimeStamp*
 // Terminate window when the red 'x' is pressed:
 - (void) windowWillClose: (NSNotification *)notification
 {
-	if ( running )
-	{
+	if ( running ) {
 		running = false;
 
 		[appLock lock];
@@ -537,19 +528,13 @@ int main( int argc, const char *argv[] )
 	// Window bounds (x, y, width, height):
 	NSRect screenRect = [[NSScreen mainScreen] frame];
 	NSRect viewRect = NSMakeRect(0, 0, 800, 600); 
-	NSRect windowRect = NSMakeRect(NSMidX(screenRect) - NSMidX(viewRect),
-								 NSMidY(screenRect) - NSMidY(viewRect),
-								 viewRect.size.width, 
-								 viewRect.size.height);
+	NSRect windowRect = NSMakeRect( NSMidX(screenRect) - NSMidX(viewRect), NSMidY(screenRect) - NSMidY(viewRect), viewRect.size.width, viewRect.size.height );
 
 	// Style flags:
 	NSUInteger windowStyle = NSWindowStyleMaskTitled  | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable; 
 
 	// Create window: 
-	NSWindow *window = [[NSWindow alloc] initWithContentRect:windowRect 
-						styleMask:windowStyle 
-						backing:NSBackingStoreBuffered 
-						defer:NO]; 
+	NSWindow *window = [[NSWindow alloc] initWithContentRect:windowRect styleMask:windowStyle backing:NSBackingStoreBuffered defer:NO]; 
 	[window autorelease];
  
 	// Window controller:

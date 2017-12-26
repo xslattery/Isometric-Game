@@ -1,3 +1,4 @@
+
 #include "platform/opengl.hpp"
 
 #include "shader.hpp"
@@ -11,8 +12,7 @@ static unsigned int compile_shader ( unsigned int type, const std::string& sourc
 
 	int result;
 	glGetShaderiv( shader, GL_COMPILE_STATUS, &result ); GLCALL;
-	if ( result == GL_FALSE )
-	{
+	if ( result == GL_FALSE ) {
 		int length;
 		glGetShaderiv( shader, GL_INFO_LOG_LENGTH, &length ); GLCALL;
 		
@@ -91,7 +91,8 @@ void set_uniform_mat4 ( const unsigned int shader, const char *name, mat4 *matri
     glUniformMatrix4fv( glGetUniformLocation( shader, name ), 1, GL_FALSE, (float*)matrix ); GLCALL;
 }
 
-
+// TODO(Xavier): (2017.12.26)
+// The above should be changed from accepting pointers to const references where possible.
 
 void set_uniform_vec2 ( const unsigned int shader, const char *name, vec4 vector )
 {

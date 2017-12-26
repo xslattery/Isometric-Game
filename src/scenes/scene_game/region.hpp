@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <mutex>
-
+#include <cstdint>
 #include "../../platform/platform.h"
 #include "../../platform/opengl.hpp"
 #include "../../math/math.hpp"
@@ -47,22 +47,22 @@ enum Region_Command_Type
 
 struct Region_Command
 {
-	unsigned int type;
+	uint32_t type;
 };
 
 struct Chunk_Data
 {
-	unsigned int *floor = nullptr;
-	unsigned int floorBegin, floorEnd;
-	unsigned int floorNonHiddenBegin, floorNonHiddenEnd;
+	uint32_t *floor = nullptr;
+	uint32_t floorBegin, floorEnd;
+	uint32_t floorNonHiddenBegin, floorNonHiddenEnd;
 
-	unsigned int *wall = nullptr;
-	unsigned int wallBegin, wallEnd;
-	unsigned int wallNonHiddenBegin, wallNonHiddenEnd;
+	uint32_t *wall = nullptr;
+	uint32_t wallBegin, wallEnd;
+	uint32_t wallNonHiddenBegin, wallNonHiddenEnd;
 
-	unsigned char *water = nullptr;
-	unsigned int waterBegin, waterEnd;
-	unsigned int waterNonHiddenBegin, waterNonHiddenEnd;
+	uint8_t *water = nullptr;
+	uint32_t waterBegin, waterEnd;
+	uint32_t waterNonHiddenBegin, waterNonHiddenEnd;
 };
 
 enum Chunk_Mesh_Data_Type
@@ -74,23 +74,23 @@ enum Chunk_Mesh_Data_Type
 
 struct Chunk_Mesh_Data
 {
-	unsigned int type;
+	uint32_t type;
 	vec3 position;
-	std::size_t age;
+	size_t age;
 	std::vector<float> vertexData;
-	std::vector<unsigned int> indexData;
-	std::vector<unsigned int> layeredIndexCount;
+	std::vector<uint32_t> indexData;
+	std::vector<uint32_t> layeredIndexCount;
 };
 
 struct Chunk_Mesh
 {
 	struct Sub_Mesh
 	{
-		unsigned int vao = 0;
-		unsigned int vbo = 0;
-		unsigned int ibo = 0;
-		unsigned int indexCount = 0;
-		std::vector<unsigned int> layeredIndexCount;
+		uint32_t vao = 0;
+		uint32_t vbo = 0;
+		uint32_t ibo = 0;
+		uint32_t indexCount = 0;
+		std::vector<uint32_t> layeredIndexCount;
 
 		~Sub_Mesh()
 		{
@@ -100,13 +100,13 @@ struct Chunk_Mesh
 		}
 	};
 
-	std::size_t floorMeshAge = 0;
+	size_t floorMeshAge = 0;
 	Sub_Mesh floorMesh;
 
-	std::size_t wallMeshAge = 0;
+	size_t wallMeshAge = 0;
 	Sub_Mesh wallMesh;
 
-	std::size_t waterMeshAge = 0;
+	size_t waterMeshAge = 0;
 	Sub_Mesh waterMesh;
 };
 
@@ -114,30 +114,30 @@ struct Region
 {
 	// SIMULATION THREAD:
 	Chunk_Data *chunks = nullptr;
-	unsigned int length, width, height;
-	unsigned int chunkLength, chunkWidth, chunkHeight;
-	unsigned int worldLength, worldWidth, worldHeight;
+	uint32_t length, width, height;
+	uint32_t chunkLength, chunkWidth, chunkHeight;
+	uint32_t worldLength, worldWidth, worldHeight;
 
 	std::mutex chunksNeedingMeshUpdate_mutex;
-	unsigned int *chunksNeedingMeshUpdate = nullptr;
+	uint32_t *chunksNeedingMeshUpdate = nullptr;
 
 	std::vector<vec4> waterThatNeedsUpdate;
 	std::vector<bool> updatedWaterBitset;
 
 	// GENERATION THREAD:
-	std::atomic<unsigned int> ageIncrementerFloor;
-	std::atomic<unsigned int> ageIncrementerWall;
-	std::atomic<unsigned int> ageIncrementerWater;
-	std::atomic<unsigned int> generationNextChunk;
+	std::atomic<uint32_t> ageIncrementerFloor;
+	std::atomic<uint32_t> ageIncrementerWall;
+	std::atomic<uint32_t> ageIncrementerWater;
+	std::atomic<uint32_t> generationNextChunk;
 
 	// MAIN, SIMULATION & GENERATION THREADS:
 	std::atomic_bool simulationPaused;
-	std::atomic<unsigned int> simulationDeltaTime;
-	std::atomic<unsigned int> generationDeltaTime;
+	std::atomic<uint32_t> simulationDeltaTime;
+	std::atomic<uint32_t> generationDeltaTime;
 	std::atomic_bool chunkDataGenerated;
-	std::atomic<unsigned int> numberOfWaterBeingUpdated;
+	std::atomic<uint32_t> numberOfWaterBeingUpdated;
 
-	std::atomic<unsigned int> viewDirection;
+	std::atomic<uint32_t> viewDirection;
 
 	std::mutex chunkMeshData_mutex_1;
 	std::vector<Chunk_Mesh_Data> chunkMeshData_1;
@@ -152,9 +152,9 @@ struct Region
 	// MAIN THREAD:
 	Chunk_Mesh* chunkMeshes;
 
-	unsigned int shader;
-	unsigned int chunkMeshTexture;
-	unsigned int chunkMeshTexture_halfHeight;
+	uint32_t shader;
+	uint32_t chunkMeshTexture;
+	uint32_t chunkMeshTexture_halfHeight;
 	float projectionScale;
 	mat4 projection;
 	mat4 camera;
@@ -176,7 +176,7 @@ void region_simulate ( Region *region );
 
 /////////////////
 // MAIN THREAD:
-void region_init ( const WindowInfo& window, Region *region, unsigned int cl, unsigned int cw, unsigned int ch, unsigned int wl, unsigned int ww, unsigned int wh );
+void region_init ( const WindowInfo& window, Region *region, uint32_t cl, uint32_t cw, uint32_t ch, uint32_t wl, uint32_t ww, uint32_t wh );
 void region_cleanup ( Region *region );
 void region_render ( const WindowInfo& window, Region *region );
 void region_resize_viewport ( const WindowInfo& window, Region *region );

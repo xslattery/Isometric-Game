@@ -1,13 +1,13 @@
+
 #include "platform/opengl.hpp"
 #include <ft2build.h>
 #include FT_FREETYPE_H
-
 #include <cstddef>
 #include <map>
 #include <vector>
+#include "shader.hpp"
 
 #include "text.hpp"
-#include "shader.hpp"
 
 
 void create_packed_glyph_texture ( Packed_Glyph_Texture &pgt, const char* filename, FT_Library freeType, unsigned int filter )
@@ -16,21 +16,18 @@ void create_packed_glyph_texture ( Packed_Glyph_Texture &pgt, const char* filena
 	if ( pgt.fontsize > 200 ) pgt.fontsize = 200; 
 	
 	FT_Face face;
-	if ( FT_New_Face(freeType, filename, 0, &face) )
-	{
+	if ( FT_New_Face(freeType, filename, 0, &face) ) {
 		std::cout << "FREETYPE: Failed to load font.\n";
 		return;
 	}
 	
 	FT_Set_Pixel_Sizes( face, 0, pgt.fontsize );
-	if ( FT_Load_Char(face, 'X', FT_LOAD_RENDER) )
-	{
+	if ( FT_Load_Char(face, 'X', FT_LOAD_RENDER) ) {
 		std::cout << "FREETYTPE: Failed to load Glyph\n";
 		return;
 	}
 	
-	struct Temp_Character
-	{
+	struct Temp_Character {
 		vec2 size; 
 		vec2 bearing;	
 		unsigned int advance;	
@@ -42,10 +39,8 @@ void create_packed_glyph_texture ( Packed_Glyph_Texture &pgt, const char* filena
 	unsigned char startCharacter = 0;
 	unsigned char endCharacter = 128;
 
-	for ( unsigned char c = startCharacter; c <= endCharacter; ++c )
-	{
-		if ( FT_Load_Char(face, c, FT_LOAD_RENDER) )
-		{
+	for ( unsigned char c = startCharacter; c <= endCharacter; ++c ) {
+		if ( FT_Load_Char(face, c, FT_LOAD_RENDER) ) {
 			std::cout << "ERROR::FREETYTPE: Failed to load Glyph";
 			continue;
 		}
@@ -69,8 +64,7 @@ void create_packed_glyph_texture ( Packed_Glyph_Texture &pgt, const char* filena
 	FT_Done_Face( face );
 
 	unsigned int combinedCharacterArea = 0;
-	for ( std::size_t i = startCharacter; i <= endCharacter; i++ )
-	{ 
+	for ( std::size_t i = startCharacter; i <= endCharacter; i++ ) { 
 		combinedCharacterArea += tempGlyphs[i].size.x * tempGlyphs[i].size.y; 
 	}
 
@@ -81,19 +75,15 @@ void create_packed_glyph_texture ( Packed_Glyph_Texture &pgt, const char* filena
 	unsigned char *combinedBitmap = new unsigned char [ recmDim * recmDim ](); // TODO(Xavier): (2017.11.20) Allocation may fail, handle this.
 	
 	unsigned int xx = 0; unsigned int yy = 0;
-	for ( std::size_t ch = startCharacter; ch <= endCharacter; ++ch )
-	{
-		if ( tempGlyphs[ch].size.x > 0 )
-		{ 
+	for ( std::size_t ch = startCharacter; ch <= endCharacter; ++ch ) {
+		if ( tempGlyphs[ch].size.x > 0 ) { 
 			if ( xx + tempGlyphs[ch].size.x + 1 > recmDim ) { yy += pgt.fontsize; xx = 0; }
 			if ( yy + tempGlyphs[ch].size.y + 1 > recmDim ) { break; }
 			
 			pgt.glyphs[ch].position = vec2( xx, yy );
 			
-			for ( std::size_t y = yy; y < yy+tempGlyphs[ch].size.y; y++ )
-			{
-				for ( std::size_t x = xx; x < xx+tempGlyphs[ch].size.x; x++ )
-				{
+			for ( std::size_t y = yy; y < yy+tempGlyphs[ch].size.y; y++ ) {
+				for ( std::size_t x = xx; x < xx+tempGlyphs[ch].size.x; x++ ) {
 					combinedBitmap[ recmDim*y + x ] = tempGlyphs[ch].bitmap[ (std::size_t)tempGlyphs[ch].size.x*(y-yy) + x-xx ];
 				}
 			}
@@ -139,8 +129,7 @@ void create_text_mesh( const char* text, Text_Mesh &tm, Packed_Glyph_Texture &pg
 			yy = pgt.glyphs[i].bearing.y/scaleFactor;
 
 	
-	for ( std::size_t i = 0; i < strlen( text ); ++i )
-	{
+	for ( std::size_t i = 0; i < strlen( text ); ++i ) {
 		#define TAB_WIDTH 4 // NOTE(Xavier): (2017.11.20) This should probably be customizable.
 
 		unsigned char ch = text[i];
@@ -157,8 +146,7 @@ void create_text_mesh( const char* text, Text_Mesh &tm, Packed_Glyph_Texture &pg
 		float uv_xd = ( 1.0f / pgt.width ) * ( pgt.glyphs[ ch ].position.x + pgt.glyphs[ ch ].size.x );
 		float uv_yd = ( 1.0f / pgt.height ) * ( pgt.glyphs[ ch ].position.y + pgt.glyphs[ ch ].size.y );
 
-		float tmpVertArray[ 20 ] =
-		{ 
+		float tmpVertArray[ 20 ] = { 
 			xx, 	yy-yo, 		0,		uv_x, 		uv_y,
 			xx, 	yy+yd-yo, 	0,		uv_x, 		uv_yd,
 			xx+xd, 	yy+yd-yo, 	0,		uv_xd, 		uv_yd,
@@ -169,8 +157,7 @@ void create_text_mesh( const char* text, Text_Mesh &tm, Packed_Glyph_Texture &pg
 		// NOTE(Xavier): This is for in the future when
 		// individual pgt.glyphs can have their own colors.
 
-		unsigned char tmpColorArray[ 16 ] =
-		{
+		unsigned char tmpColorArray[ 16 ] = {
 			255, 255, 255, 255,
 			255, 255, 255, 255,
 			255, 255, 255, 255,
@@ -179,8 +166,7 @@ void create_text_mesh( const char* text, Text_Mesh &tm, Packed_Glyph_Texture &pg
 		colors.insert( colors.end(), tmpColorArray, tmpColorArray + 16 );
 
 		// TODO(Xavier): (2017.11.20) Support should be added to choose the winding direction.
-		unsigned int tmp_indx_array[ 6 ] =
-		{
+		unsigned int tmp_indx_array[ 6 ] = {
 			vert_ofst, vert_ofst+1, vert_ofst+2, vert_ofst, vert_ofst+2, vert_ofst+3
 		};
 		indis.insert( indis.end(),  tmp_indx_array, tmp_indx_array+6 );
@@ -189,8 +175,7 @@ void create_text_mesh( const char* text, Text_Mesh &tm, Packed_Glyph_Texture &pg
 		xx += ( (int)(pgt.glyphs[ ch ].advance / scaleFactor) >> 6 ) - pgt.glyphs[ ch ].bearing.x / scaleFactor;
 	}
 
-	if ( verts.size() > 0 )
-	{	
+	if ( verts.size() > 0 ) {	
 		tm.num_indices = indis.size();
 
 		if ( tm.vao == 0 ) glGenVertexArrays( 1, &tm.vao );

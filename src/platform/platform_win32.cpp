@@ -61,14 +61,11 @@ int APIENTRY WinMain ( HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow )
 	
 	// Main Loop:
 	running = true;
-	while ( running )
-	{
+	while ( running ) {
 		// Message loop:
 		MSG message = { };
-		while ( PeekMessage(&message, 0, 0, 0, PM_REMOVE) )
-		{
-			if ( message.message == WM_QUIT || message.message == WM_CLOSE )
-			{
+		while ( PeekMessage(&message, 0, 0, 0, PM_REMOVE) ) {
+			if ( message.message == WM_QUIT || message.message == WM_CLOSE ) {
 				running = false;
 				// MessageBox( NULL, "Hi", "There", MB_OK );
 			}
@@ -89,8 +86,7 @@ int APIENTRY WinMain ( HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow )
 HGLRC SetupGLContext ( HWND windowHandle, HDC localDeviceContextHandle )
 {
 	
-	PIXELFORMATDESCRIPTOR desiredPixelFormat =
-	{
+	PIXELFORMATDESCRIPTOR desiredPixelFormat = {
 		sizeof(PIXELFORMATDESCRIPTOR),								// Size
 		1,															// Version
 		PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,	// Flags
@@ -119,8 +115,7 @@ HGLRC SetupGLContext ( HWND windowHandle, HDC localDeviceContextHandle )
 	// some other setup function calls.
 	glewInit();
 
-	int attributes[] = 
-	{
+	int attributes[] =  {
 	    WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
 	    WGL_CONTEXT_MINOR_VERSION_ARB, 3,
 	    WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
@@ -170,8 +165,7 @@ void OnMouseWheel ( HWND windowHandle, int xPos, int yPos, int zDelta, UINT )
 
 void OnChar ( HWND windowHandle, TCHAR character, int )
 {
-	switch ( character )
-	{
+	switch ( character ) {
 		case 'q': case 'Q':
 			PostMessage(windowHandle, WM_CLOSE, 0, 0);
 			break;
@@ -182,8 +176,7 @@ void OnChar ( HWND windowHandle, TCHAR character, int )
 
 LRESULT CALLBACK WndProc ( HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam )
 {
-	switch ( message )
-	{
+	switch ( message ) {
 		case WM_CREATE:
 			deviceContextHandle = GetDC( windowHandle );
 			openglContext = SetupGLContext( windowHandle, deviceContextHandle );

@@ -19,8 +19,11 @@
 #endif
 
 #if DEBUG
-#define GLCALL { while ( GLenum error = glGetError() ) \
-{ std::cout << "OpenGL Error: F:" << __FILE__ << " L:" << __LINE__ << " : " << error << '\n'; } }
+#define GLCALL { \
+	while ( GLenum error = glGetError() ) { \
+		std::cout << "OpenGL Error: F:" << __FILE__ << " L:" << __LINE__ << " : " << error << '\n'; \
+	} \
+}
 #else
 #define GLCALL
 #endif

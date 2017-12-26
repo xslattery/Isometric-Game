@@ -6,6 +6,7 @@
 
 #include "scene_mainmenu.hpp"
 
+
 //////////////////////////////////////
 // Main Thread - Methods:
 void MainMenu_Scene::init( const WindowInfo& window )
@@ -25,8 +26,7 @@ void MainMenu_Scene::init( const WindowInfo& window )
 			out vec2 TexCoord;
 			out vec4 inColor;
 
-			void main ()
-			{
+			void main () {
 			    gl_Position = projection * view * model * vec4(position, 1.0);
 			    TexCoord = texcoord;
 			    inColor = color;
@@ -43,8 +43,7 @@ void MainMenu_Scene::init( const WindowInfo& window )
 
 			layout(location = 0) out vec4 Color;
 
-			void main ()
-			{
+			void main () {
 			    if ( texture(ourTexture, TexCoord).r == 0 ) discard;
 			    Color = vec4( inColor.xyz, texture(ourTexture, TexCoord).r );
 			    // Color = vec4( 1, 0, 0, 1 );
@@ -83,8 +82,7 @@ void MainMenu_Scene::resize ( const WindowInfo& window )
 
 void MainMenu_Scene::input( const WindowInfo& window, InputInfo* input )
 {
-	if ( get_key_down( input, Key::Key_SPACE ) )
-	{
+	if ( get_key_down( input, Key::Key_SPACE ) ) {
 		Scene_Manager::change_scene( SceneType::Game, window );
 	}
 }
