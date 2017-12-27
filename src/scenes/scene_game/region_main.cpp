@@ -154,7 +154,8 @@ void region_cleanup ( Region *region )
 
 static uint32_t framebuffer = 0;
 static uint32_t texColorBuffer = 0;
-static uint32_t rbo = 0;
+static uint32_t texDepthBuffer = 0;
+// static uint32_t rbo = 0;
 static bool framebufferGenerated = false;
 static uint32_t quadVAO = 0, quadVBO = 0;
 static uint32_t framebufferShader = 0;
@@ -170,23 +171,27 @@ void region_render ( const WindowInfo& window, Region *region )
 		glGenFramebuffers( 1, &framebuffer ); GLCALL;
 		glBindFramebuffer( GL_FRAMEBUFFER, framebuffer ); GLCALL;
 
-		// generate texture
+		// generate color texture
 		glGenTextures( 1, &texColorBuffer ); GLCALL;
 		glBindTexture( GL_TEXTURE_2D, texColorBuffer ); GLCALL;
 		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, window.hidpi_width, window.hidpi_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL ); GLCALL;
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST  ); GLCALL;
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST ); GLCALL;
-		glBindTexture( GL_TEXTURE_2D, 0 ); GLCALL;
 
 		// attach it to currently bound framebuffer object
 		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0 ); GLCALL;
+		glBindTexture( GL_TEXTURE_2D, 0 ); GLCALL;
 
-		glGenRenderbuffers( 1, &rbo ); GLCALL;
-		glBindRenderbuffer( GL_RENDERBUFFER, rbo ); GLCALL;
-		glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window.hidpi_width, window.hidpi_height ); GLCALL; 
-		glBindRenderbuffer( GL_RENDERBUFFER, 0 ); GLCALL;
+		// generate depth texture
+		glGenTextures( 1, &texDepthBuffer ); GLCALL;
+		glBindTexture( GL_TEXTURE_2D, texDepthBuffer ); GLCALL;
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, window.hidpi_width, window.hidpi_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL ); GLCALL;
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST  ); GLCALL;
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST ); GLCALL;
 
-		glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo ); GLCALL;
+		// attach it to currently bound framebuffer object
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texDepthBuffer, 0 ); GLCALL;
+		glBindTexture( GL_TEXTURE_2D, 0 ); GLCALL;
 
 		if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
 			std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
@@ -236,15 +241,18 @@ void region_render ( const WindowInfo& window, Region *region )
 				  
 				in vec2 TexCoords;
 
-				uniform sampler2D screenTexture;
+				uniform sampler2D screenColorTexture;
+				uniform sampler2D screenDepthTexture;
 
 				void main()
 				{
-					vec4 color = texture(screenTexture, TexCoords);
+					vec4 color = texture(screenColorTexture, TexCoords);
 					if ( color.a > 0 )
 					    FragColor = color;
 					else
 						FragColor = vec4(0, 0, 0, 0);
+
+					gl_FragDepth = texture(screenDepthTexture , TexCoords).r;
 				}
 			)"
 		);
@@ -291,6 +299,7 @@ void region_render ( const WindowInfo& window, Region *region )
 		if ( cm.floorMesh.vao != 0 && cm.floorMesh.indexCount != 0 ) {
 			auto mtx = translate(mat4(1), vec3(0));
 			set_uniform_mat4( region->shader, "model", &mtx );
+			glActiveTexture(GL_TEXTURE0);
 			glBindTexture( GL_TEXTURE_2D, region->chunkMeshTexture ); GLCALL;
 			glBindVertexArray( cm.floorMesh.vao ); GLCALL;
 			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.floorMesh.ibo ); GLCALL;
@@ -312,6 +321,7 @@ void region_render ( const WindowInfo& window, Region *region )
 		if ( cm.wallMesh.vao != 0 && cm.wallMesh.indexCount != 0 ) {
 			auto mtx = translate(mat4(1), vec3(0));
 			set_uniform_mat4( region->shader, "model", &mtx );
+			glActiveTexture(GL_TEXTURE0);
 			glBindTexture( GL_TEXTURE_2D, region->chunkMeshTexture ); GLCALL;
 			glBindVertexArray( cm.wallMesh.vao ); GLCALL;
 			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.wallMesh.ibo ); GLCALL;
@@ -336,6 +346,7 @@ void region_render ( const WindowInfo& window, Region *region )
 
 				auto mtx = translate(mat4(1), vec3(0));
 				set_uniform_mat4( region->shader, "model", &mtx );
+				glActiveTexture(GL_TEXTURE0);
 				glBindTexture( GL_TEXTURE_2D, region->chunkMeshTexture ); GLCALL;
 				glBindVertexArray( cm.waterMesh.vao ); GLCALL;
 				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.waterMesh.ibo ); GLCALL;
@@ -358,12 +369,19 @@ void region_render ( const WindowInfo& window, Region *region )
 		}
 	}
 
-	glDisable( GL_DEPTH_TEST ); GLCALL;
+	
 	glUseProgram( framebufferShader ); GLCALL;
+	uint32_t colorLocation = glGetUniformLocation(framebufferShader, "screenColorTexture");
+	uint32_t depthLocation  = glGetUniformLocation(framebufferShader, "screenDepthTexture");
+	glUniform1i(colorLocation, 0);
+	glUniform1i(depthLocation,  1);
     glBindVertexArray( quadVAO ); GLCALL;
+    glActiveTexture(GL_TEXTURE0 + 0);
     glBindTexture( GL_TEXTURE_2D, texColorBuffer ); GLCALL;
+    glActiveTexture(GL_TEXTURE0 + 1);
+    glBindTexture( GL_TEXTURE_2D, texDepthBuffer ); GLCALL;
     glDrawArrays( GL_TRIANGLES, 0, 6 );
-    glEnable( GL_DEPTH_TEST ); GLCALL;
+    glActiveTexture(GL_TEXTURE0);
 }
 
 
@@ -376,13 +394,15 @@ void region_resize_viewport ( const WindowInfo& window, Region *region )
 
 	glBindTexture( GL_TEXTURE_2D, texColorBuffer ); GLCALL;
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, window.hidpi_width, window.hidpi_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL ); GLCALL;
+	glBindTexture( GL_TEXTURE_2D, texDepthBuffer ); GLCALL;
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, window.hidpi_width, window.hidpi_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL ); GLCALL;
 	glBindTexture( GL_TEXTURE_2D, 0 ); GLCALL;
 
 	// TODO(Xavier): (2017.12.27)
 	// This may be leaking memory, it may be safer to just recreate the framebuffer.
-	glBindRenderbuffer( GL_RENDERBUFFER, rbo ); GLCALL;
-	glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window.hidpi_width, window.hidpi_height ); GLCALL; 
-	glBindRenderbuffer( GL_RENDERBUFFER, 0 ); GLCALL;
+	// glBindRenderbuffer( GL_RENDERBUFFER, rbo ); GLCALL;
+	// glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window.hidpi_width, window.hidpi_height ); GLCALL; 
+	// glBindRenderbuffer( GL_RENDERBUFFER, 0 ); GLCALL;
 }
 
 
