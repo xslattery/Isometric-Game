@@ -6,9 +6,9 @@
 #include "region.hpp"
 
 
-static void build_floor_mesh( Region *region, uint32_t chunk );
-static void build_wall_mesh( Region *region, uint32_t chunk );
-static void build_water_mesh( Region *region, uint32_t chunk );
+static void build_floor_mesh( Region *region, uint32_t chunk, bool full );
+static void build_wall_mesh( Region *region, uint32_t chunk, bool full );
+static void build_water_mesh( Region *region, uint32_t chunk, bool full );
 
 
 //////////////////////////////////
@@ -19,47 +19,49 @@ bool region_build_new_meshes ( Region *region )
 {
 	bool didWork = false;
 	if ( region->chunkDataGenerated ) {
-		std::vector<uint32_t> chunksToBeUpdated;
-		std::vector<uint32_t> chunksToBeUpdatedInfo;
-		// uint32_t chunkToBeUpdated = 0;
-		// uint32_t chunkToBeUpdatedInfo = 0;
+		int chunkToBeUpdated = -1;
+		uint32_t chunkToBeUpdatedInfo = 0;
 		
 		region->chunksNeedingMeshUpdate_mutex.lock();
 		
-		for ( uint32_t i = region->generationNextChunk; i < region->length*region->width*region->height; ++i ) {
-			if ( region->chunksNeedingMeshUpdate[i] != 0 ) {
-				// region->generationNextChunk = i + 1;
-				// if ( region->generationNextChunk >= region->length*region->width*region->height ) region->generationNextChunk = 0;
+			uint32_t ii = region->generationNextChunk;
+			uint32_t counter = 0;
+			while ( counter < region->length*region->width*region->height ) {
+				
+				if ( ii >= region->length*region->width*region->height ) ii = 0;
 
-				chunksToBeUpdated.push_back( i );
-				chunksToBeUpdatedInfo.push_back( region->chunksNeedingMeshUpdate[i] );
+				if ( region->chunksNeedingMeshUpdate[ii] != 0 ) {
+					region->generationNextChunk = ii + 1;
+					if ( region->generationNextChunk >= region->length*region->width*region->height ) region->generationNextChunk = 0;
 
-				// chunkToBeUpdated = i;
-				// chunkToBeUpdatedInfo = region->chunksNeedingMeshUpdate[i];
-				region->chunksNeedingMeshUpdate[i] = 0;
-				// break;
+					chunkToBeUpdated = ii;
+					chunkToBeUpdatedInfo = region->chunksNeedingMeshUpdate[ii];
+					region->chunksNeedingMeshUpdate[ii] = 0;
+					break;
+				}
+				
+				ii++;
+				counter++;
 			}
-		}
 		
 		region->chunksNeedingMeshUpdate_mutex.unlock();
 
-		// if ( chunkToBeUpdatedInfo != 0 )
-		// {
-		// 	if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::FLOOR ) build_floor_mesh( region, chunkToBeUpdated );
-		// 	if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::WALL ) build_wall_mesh( region, chunkToBeUpdated );
-		// 	if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::WATER ) build_water_mesh( region, chunkToBeUpdated );
+		if ( chunkToBeUpdated != -1 )
+		{
+			if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::FLOOR ) build_floor_mesh( region, chunkToBeUpdated, false );
+			if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::WALL ) build_wall_mesh( region, chunkToBeUpdated, false );
+			if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::WATER ) build_water_mesh( region, chunkToBeUpdated, false );
 
-		// 	didWork = true;
-		// }
+			if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::FLOOR ) build_floor_mesh( region, chunkToBeUpdated, true );
+			if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::WALL ) build_wall_mesh( region, chunkToBeUpdated, true );
+			if ( chunkToBeUpdatedInfo & Chunk_Mesh_Data_Type::WATER ) build_water_mesh( region, chunkToBeUpdated, true );
 
-		for ( uint32_t i = 0; i < chunksToBeUpdated.size(); ++i ) {
-			if ( chunksToBeUpdatedInfo[i] & Chunk_Mesh_Data_Type::FLOOR ) build_floor_mesh( region, chunksToBeUpdated[i] );
-			if ( chunksToBeUpdatedInfo[i] & Chunk_Mesh_Data_Type::WALL ) build_wall_mesh( region, chunksToBeUpdated[i] );
-			if ( chunksToBeUpdatedInfo[i] & Chunk_Mesh_Data_Type::WATER ) build_water_mesh( region, chunksToBeUpdated[i] );
+			didWork = true;
 		}
-		if ( chunksToBeUpdated.size() > 0 ) didWork = true;
 	}
 
+	// TODO(Xavier): (2017.12.29)
+	// Abstract this away.
 #ifdef PLATFORM_OSX
 	mach_timebase_info_data_t timingInfoSimulation;
 	if ( mach_timebase_info (&timingInfoSimulation) != KERN_SUCCESS )
@@ -79,7 +81,7 @@ bool region_build_new_meshes ( Region *region )
 //////////////////////////////////
 // This function builds the chunk
 // mesh for the floors.
-static void build_floor_mesh( Region *region, uint32_t chunk )
+static void build_floor_mesh( Region *region, uint32_t chunk, bool full )
 {
 	std::vector<float> verts;
 	std::vector<uint32_t> indices;
@@ -107,7 +109,9 @@ static void build_floor_mesh( Region *region, uint32_t chunk )
 		if ( i > 0 && i % (region->chunkLength*region->chunkWidth) == 0 )
 			indexCount.push_back( indices.size() );
 
-		if ( chunkDataFloor[i] != Floor::FLOOR_NONE ) {
+		if ( (chunkDataFloor[i] & 0xFFFFFF) != Floor::FLOOR_NONE ) {
+			if ( (chunkDataFloor[i] & OCCLUSION_BIT) != 0 && !full ) continue;
+
 			float zz = i / (region->chunkLength*region->chunkWidth);
 			uint32_t iTemp = i - zz * region->chunkLength * region->chunkWidth;
 			float yy = iTemp / region->chunkLength;
@@ -117,29 +121,22 @@ static void build_floor_mesh( Region *region, uint32_t chunk )
 			float zPos = 0;
 
 			if ( region->viewDirection == Direction::D_NORTH ) {
-				if ( (chunkDataFloor[i] & Occlusion::N_HIDDEN) != 0 ) continue;
-
 				pos = ( (xx+ox)*xDir + (yy+oy)*yDir ) * 27;
 				zPos = -(xx+ox + yy+oy) + (zz+oz)*2;
 			}
 			else if ( region->viewDirection == Direction::D_WEST ) {
-				if ( (chunkDataFloor[i] & Occlusion::W_HIDDEN) != 0 ) continue;
-
 				pos = ( (xx+ox)*yDir + (wWidth-1-(yy+oy))*xDir ) * 27;
 				zPos = -(xx+ox + wWidth-1-(yy+oy)) + (zz+oz)*2;	
 			}
 			else if ( region->viewDirection == Direction::D_SOUTH ) {
-				if ( (chunkDataFloor[i] & Occlusion::S_HIDDEN) != 0 ) continue;
-
 				pos = ( (wLength-1-(xx+ox))*xDir + (wWidth-1-(yy+oy))*yDir ) * 27;
 				zPos = -(wLength-1-(xx+ox) + wWidth-1-(yy+oy)) + (zz+oz)*2;
 			}
 			else if ( region->viewDirection == Direction::D_EAST ) {
-				if ( (chunkDataFloor[i] & Occlusion::E_HIDDEN) != 0 ) continue;
-
 				pos = ( (wLength-1-(xx+ox))*yDir + (yy+oy)*xDir ) * 27;
 				zPos = -(wLength-1-(xx+ox) + (yy+oy)) + (zz+oz)*2;
 			}
+
 			pos += vec2{ 0, 30 } * (zz+oz);
 
 			uint32_t idxP = verts.size()/5;
@@ -163,7 +160,8 @@ static void build_floor_mesh( Region *region, uint32_t chunk )
 
 	if ( region->chunkMeshData_mutex_2.try_lock() ) {
 		region->chunkMeshData_2.emplace_back();
-		region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::FLOOR;
+		if ( !full ) region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::FLOOR;
+		else region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::FLOOR_FULL;
 		region->chunkMeshData_2.back().position = vec3( cx, cy, cz );
 		region->chunkMeshData_2.back().age = ++region->ageIncrementerFloor;
 		region->chunkMeshData_2.back().vertexData = std::move( verts );
@@ -174,7 +172,8 @@ static void build_floor_mesh( Region *region, uint32_t chunk )
 	}
 	else if ( region->chunkMeshData_mutex_1.try_lock() ) {
 		region->chunkMeshData_1.emplace_back();
-		region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::FLOOR;
+		if ( !full ) region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::FLOOR;
+		else region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::FLOOR_FULL;
 		region->chunkMeshData_1.back().position = vec3( cx, cy, cz );
 		region->chunkMeshData_1.back().age = ++region->ageIncrementerFloor;
 		region->chunkMeshData_1.back().vertexData = std::move( verts );
@@ -192,7 +191,7 @@ static void build_floor_mesh( Region *region, uint32_t chunk )
 //////////////////////////////////
 // This function builds the chunk
 // mesh for walls.
-static void build_wall_mesh( Region *region, uint32_t chunk )
+static void build_wall_mesh( Region *region, uint32_t chunk, bool full )
 {
 	std::vector<float> verts;
 	std::vector<uint32_t> indices;
@@ -220,7 +219,9 @@ static void build_wall_mesh( Region *region, uint32_t chunk )
 		if ( i > 0 && i % (region->chunkLength*region->chunkWidth) == 0 )
 			indexCount.push_back( indices.size() );
 
-		if ( chunkDataWall[i] != Wall::WALL_NONE ) {
+		if ( (chunkDataWall[i] & 0xFFFFFF) != Wall::WALL_NONE ) {
+			if ( (chunkDataWall[i] & OCCLUSION_BIT) != 0 && !full ) continue;
+
 			float zz = i / (region->chunkLength*region->chunkWidth);
 			uint32_t iTemp = i - zz * region->chunkLength * region->chunkWidth;
 			float yy = iTemp / region->chunkLength;
@@ -230,29 +231,22 @@ static void build_wall_mesh( Region *region, uint32_t chunk )
 			float zPos = 0;
 
 			if ( region->viewDirection == Direction::D_NORTH ) {
-				if ( (chunkDataWall[i] & Occlusion::N_HIDDEN) != 0 ) continue;
-
 				pos = ( (xx+ox)*xDir + (yy+oy)*yDir ) * 27;
 				zPos = -(xx+ox + yy+oy) + (zz+oz)*2 + 0.1f;
 			}
 			else if ( region->viewDirection == Direction::D_WEST ) {
-				if ( (chunkDataWall[i] & Occlusion::W_HIDDEN) != 0 ) continue;
-
 				pos = ( (xx+ox)*yDir + (wWidth-1-(yy+oy))*xDir ) * 27;
 				zPos = -(xx+ox + wWidth-1-(yy+oy)) + (zz+oz)*2 + 0.1f;	
 			}
 			else if ( region->viewDirection == Direction::D_SOUTH ) {
-				if ( (chunkDataWall[i] & Occlusion::S_HIDDEN) != 0 ) continue;
-
 				pos = ( (wLength-1-(xx+ox))*xDir + (wWidth-1-(yy+oy))*yDir ) * 27;
 				zPos = -(wLength-1-(xx+ox) + wWidth-1-(yy+oy)) + (zz+oz)*2 + 0.1f;
 			}
 			else if ( region->viewDirection == Direction::D_EAST ) {
-				if ( (chunkDataWall[i] & Occlusion::E_HIDDEN) != 0 ) continue;
-
 				pos = ( (wLength-1-(xx+ox))*yDir + (yy+oy)*xDir ) * 27;
 				zPos = -(wLength-1-(xx+ox) + (yy+oy)) + (zz+oz)*2 + 0.1f;
 			}
+
 			pos += vec2{ 0, 30 } * (zz+oz);
 
 			uint32_t idxP = verts.size()/5;
@@ -276,7 +270,8 @@ static void build_wall_mesh( Region *region, uint32_t chunk )
 
 	if ( region->chunkMeshData_mutex_2.try_lock() ) {
 		region->chunkMeshData_2.emplace_back();
-		region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::WALL;
+		if ( !full ) region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::WALL;
+		else region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::WALL_FULL;
 		region->chunkMeshData_2.back().position = vec3( cx, cy, cz );
 		region->chunkMeshData_2.back().age = ++region->ageIncrementerWall;
 		region->chunkMeshData_2.back().vertexData = std::move( verts );
@@ -287,7 +282,8 @@ static void build_wall_mesh( Region *region, uint32_t chunk )
 	}
 	else if ( region->chunkMeshData_mutex_1.try_lock() ) {
 		region->chunkMeshData_1.emplace_back();
-		region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::WALL;
+		if ( !full ) region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::WALL;
+		else region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::WALL_FULL;
 		region->chunkMeshData_1.back().position = vec3( cx, cy, cz );
 		region->chunkMeshData_1.back().age = ++region->ageIncrementerWall;
 		region->chunkMeshData_1.back().vertexData = std::move( verts );
@@ -341,10 +337,11 @@ inline uint32_t region_get_floor ( Region *region, int x, int y, int z )
 	return region_get_chunk( region, cx, cy, cz )->floor[ lx + ly*region->chunkLength + lz*region->chunkLength*region->chunkWidth ];
 }
 
+
 //////////////////////////////////
 // This function builds the chunk
 // mesh for water.
-static void build_water_mesh( Region *region, uint32_t chunk )
+static void build_water_mesh( Region *region, uint32_t chunk, bool full )
 {
 	std::vector<float> verts;
 	std::vector<uint32_t> indices;
@@ -378,7 +375,7 @@ static void build_water_mesh( Region *region, uint32_t chunk )
 			float yy = iTemp / region->chunkLength;
 			float xx = iTemp % region->chunkLength;
 
-			if ( xx+ox != 0 && xx+ox != region->worldLength-1 && yy+oy != 0 && yy+oy != region->worldWidth-1 ) {
+			if ( xx+ox != 0 && xx+ox != region->worldLength-1 && yy+oy != 0 && yy+oy != region->worldWidth-1 && !full ) {
 				if ( i + region->chunkLength*region->chunkWidth < region->chunkLength*region->chunkWidth*region->chunkHeight ) {
 					if ( chunkDataWater[ i + region->chunkLength*region->chunkWidth ] > 0 ) {
 						continue;
@@ -445,7 +442,7 @@ static void build_water_mesh( Region *region, uint32_t chunk )
 			};
 			verts.insert( verts.end(), tempVerts, tempVerts+20 );
 
-			if ( region_get_floor(region, xx+ox, yy+oy, zz+oz) == Floor::FLOOR_NONE && region_get_water(region, xx+ox, yy+oy, zz+oz-1 ) > 0 ) {
+			if ( (region_get_floor(region, xx+ox, yy+oy, zz+oz) & 0xFFFFFF) == Floor::FLOOR_NONE && region_get_water(region, xx+ox, yy+oy, zz+oz-1 ) > 0 ) {
 				zPos -= 0.1f;
 
 				uint32_t idxP = verts.size()/5;
@@ -470,7 +467,8 @@ static void build_water_mesh( Region *region, uint32_t chunk )
 
 	if ( region->chunkMeshData_mutex_2.try_lock() ) {
 		region->chunkMeshData_2.emplace_back();
-		region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::WATER;
+		if ( !full ) region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::WATER;
+		else region->chunkMeshData_2.back().type = Chunk_Mesh_Data_Type::WATER_FULL;
 		region->chunkMeshData_2.back().position = vec3( cx, cy, cz );
 		region->chunkMeshData_2.back().age = ++region->ageIncrementerWater;
 		region->chunkMeshData_2.back().vertexData = std::move( verts );
@@ -481,7 +479,8 @@ static void build_water_mesh( Region *region, uint32_t chunk )
 	}
 	else if ( region->chunkMeshData_mutex_1.try_lock() ) {
 		region->chunkMeshData_1.emplace_back();
-		region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::WATER;
+		if ( !full ) region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::WATER;
+		else region->chunkMeshData_1.back().type = Chunk_Mesh_Data_Type::WATER_FULL;
 		region->chunkMeshData_1.back().position = vec3( cx, cy, cz );
 		region->chunkMeshData_1.back().age = ++region->ageIncrementerWater;
 		region->chunkMeshData_1.back().vertexData = std::move( verts );

@@ -8,15 +8,9 @@
 #include "../../platform/opengl.hpp"
 #include "../../math/math.hpp"
 
-enum Occlusion
-{
-	N_HIDDEN = 0x1 << 31,
-	E_HIDDEN = 0x1 << 30,
-	S_HIDDEN = 0x1 << 29,
-	W_HIDDEN = 0x1 << 28,
-};
+const uint32_t OCCLUSION_BIT = 0x1 << 31;
 
-enum Direction
+enum Direction : uint32_t
 {
 	D_NONE = 0,
 	D_NORTH = 1,
@@ -25,19 +19,19 @@ enum Direction
 	D_WEST = 4,
 };
 
-enum Floor
+enum Floor : uint32_t
 {
 	FLOOR_NONE = 0,
 	FLOOR_STONE = 1,
 };
 
-enum Wall
+enum Wall : uint32_t
 {
 	WALL_NONE = 0,
 	WALL_STONE = 1,
 };
 
-enum Region_Command_Type
+enum class Region_Command_Type
 {
 	GENERATE_DATA = 1,
 	ROTATE_RIGHT = 2,
@@ -47,7 +41,7 @@ enum Region_Command_Type
 
 struct Region_Command
 {
-	uint32_t type;
+	Region_Command_Type type;
 };
 
 struct Chunk_Data
@@ -65,11 +59,15 @@ struct Chunk_Data
 	uint32_t waterNonHiddenBegin, waterNonHiddenEnd;
 };
 
-enum Chunk_Mesh_Data_Type
+enum Chunk_Mesh_Data_Type : uint32_t
 {
 	FLOOR = 0x1 << 0,
 	WALL = 0x1 << 1,
 	WATER = 0x1 << 2,
+
+	FLOOR_FULL = 0x1 << 3,
+	WALL_FULL = 0x1 << 4,
+	WATER_FULL = 0x1 << 5,
 };
 
 struct Chunk_Mesh_Data
@@ -102,43 +100,44 @@ struct Chunk_Mesh
 
 	size_t floorMeshAge = 0;
 	Sub_Mesh floorMesh;
-
 	size_t wallMeshAge = 0;
 	Sub_Mesh wallMesh;
-
 	size_t waterMeshAge = 0;
 	Sub_Mesh waterMesh;
+
+	size_t floorMeshAge_full = 0;
+	Sub_Mesh floorMesh_full;
+	size_t wallMeshAge_full = 0;
+	Sub_Mesh wallMesh_full;
+	size_t waterMeshAge_full = 0;
+	Sub_Mesh waterMesh_full;
 };
 
 struct Region
 {
 	// SIMULATION THREAD:
-	Chunk_Data *chunks = nullptr;
-	uint32_t length, width, height;
-	uint32_t chunkLength, chunkWidth, chunkHeight;
-	uint32_t worldLength, worldWidth, worldHeight;
-
-	std::mutex chunksNeedingMeshUpdate_mutex;
-	uint32_t *chunksNeedingMeshUpdate = nullptr;
-
 	std::vector<vec4> waterThatNeedsUpdate;
 	std::vector<bool> updatedWaterBitset;
 
 	// GENERATION THREAD:
+	std::mutex chunksNeedingMeshUpdate_mutex;
+	uint32_t *chunksNeedingMeshUpdate = nullptr;
+
+	std::atomic<uint32_t> generationNextChunk;
 	std::atomic<uint32_t> ageIncrementerFloor;
 	std::atomic<uint32_t> ageIncrementerWall;
 	std::atomic<uint32_t> ageIncrementerWater;
-	std::atomic<uint32_t> generationNextChunk;
 
 	// MAIN, SIMULATION & GENERATION THREADS:
-	std::atomic_bool simulationPaused;
-	std::atomic<uint32_t> simulationDeltaTime;
-	std::atomic<uint32_t> generationDeltaTime;
-	std::atomic_bool chunkDataGenerated;
-	std::atomic<uint32_t> numberOfWaterBeingUpdated;
-
+	Chunk_Data *chunks = nullptr;
+	uint32_t length, width, height;
+	uint32_t chunkLength, chunkWidth, chunkHeight;
+	uint32_t worldLength, worldWidth, worldHeight;
 	std::atomic<uint32_t> viewDirection;
 
+	std::atomic_bool simulationPaused;
+	std::atomic_bool chunkDataGenerated;
+	
 	std::mutex chunkMeshData_mutex_1;
 	std::vector<Chunk_Mesh_Data> chunkMeshData_1;
 	std::mutex chunkMeshData_mutex_2;
@@ -148,6 +147,10 @@ struct Region
 	std::vector<Region_Command> commandQue_1;
 	std::mutex commandQue_mutex_2;
 	std::vector<Region_Command> commandQue_2;
+
+	std::atomic<uint32_t> simulationDeltaTime;
+	std::atomic<uint32_t> generationDeltaTime;
+	std::atomic<uint32_t> numberOfWaterBeingUpdated;
 
 	// MAIN THREAD:
 	Chunk_Mesh* chunkMeshes;

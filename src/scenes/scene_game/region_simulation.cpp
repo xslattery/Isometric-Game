@@ -45,6 +45,8 @@ void region_simulate ( Region *region )
 		}
 	}
 
+	// TODO(Xavier): (2017.12.29)
+	// Abstract this away.
 #ifdef PLATFORM_OSX
 	mach_timebase_info_data_t timingInfoSimulation;
 	if ( mach_timebase_info (&timingInfoSimulation) != KERN_SUCCESS )
@@ -526,10 +528,7 @@ void region_generate ( Region *region )
 									if ( region_get_floor(region, xx+1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy-1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE ) {
 										if ( region_get_floor(region, xx+1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy+1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE ) {
 											if ( region_get_floor(region, xx-1, yy, zz) != Floor::FLOOR_NONE && region_get_floor(region, xx, yy+1, zz) != Floor::FLOOR_NONE && region_get_wall(region, xx, yy, zz) != Wall::WALL_NONE ) {
-												*floor |= Occlusion::N_HIDDEN;
-												*floor |= Occlusion::E_HIDDEN;
-												*floor |= Occlusion::S_HIDDEN;
-												*floor |= Occlusion::W_HIDDEN;
+												*floor |= OCCLUSION_BIT;
 											}
 										}
 									}
@@ -541,10 +540,7 @@ void region_generate ( Region *region )
 									if ( region_get_wall(region, xx+1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy-1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE ) {
 										if ( region_get_wall(region, xx+1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy+1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE ) {
 											if ( region_get_wall(region, xx-1, yy, zz) != Wall::WALL_NONE && region_get_wall(region, xx, yy+1, zz) != Wall::WALL_NONE && region_get_floor(region, xx, yy, zz+1) != Floor::FLOOR_NONE ) {
-												*wall |= Occlusion::N_HIDDEN;
-												*wall |= Occlusion::E_HIDDEN;
-												*wall |= Occlusion::S_HIDDEN;
-												*wall |= Occlusion::W_HIDDEN;
+												*wall |= OCCLUSION_BIT;
 											}
 										}
 									}
