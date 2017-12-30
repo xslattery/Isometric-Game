@@ -31,13 +31,20 @@ bool region_build_new_meshes ( Region *region )
 				if ( ii >= region->length*region->width*region->height ) ii = 0;
 
 				if ( region->chunksNeedingMeshUpdate[ii] != 0 ) {
-					region->generationNextChunk = ii + 1;
-					if ( region->generationNextChunk >= region->length*region->width*region->height ) region->generationNextChunk = 0;
 
-					chunkToBeUpdated = ii;
-					chunkToBeUpdatedInfo = region->chunksNeedingMeshUpdate[ii];
-					region->chunksNeedingMeshUpdate[ii] = 0;
-					break;
+					if ( ii/(region->length*region->width)*region->chunkHeight <= region->viewHeight ) {
+						if ( (int)(ii/(region->length*region->width)*region->chunkHeight + region->chunkHeight-1) > (int)region->viewHeight - (int)region->viewDepth ) {
+
+							region->generationNextChunk = ii + 1;
+							if ( region->generationNextChunk >= region->length*region->width*region->height ) region->generationNextChunk = 0;
+
+							chunkToBeUpdated = ii;
+							chunkToBeUpdatedInfo = region->chunksNeedingMeshUpdate[ii];
+							region->chunksNeedingMeshUpdate[ii] = 0;
+							break;
+
+						}
+					}
 				}
 				
 				ii++;

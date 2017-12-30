@@ -188,25 +188,27 @@ void region_render ( const WindowInfo& window, Region *region )
 	if ( region->viewDepth < 1 ) region->viewDepth = 1;
 	if ( region->viewDepth > region->worldHeight ) region->viewDepth = region->worldHeight;
 
+
 	glUseProgram( region->shader ); GLCALL;
 	set_uniform_mat4( region->shader, "projection", &region->projection );
 	set_uniform_mat4( region->shader, "view", &region->camera );
 	
+	int viewHeightMinOne = (int)region->viewHeight - 1;
 	for ( uint32_t i = 0; i < region->length*region->width*region->height; ++i ) {
-		if ( i/(region->length*region->width)*region->chunkHeight > region->viewHeight ) continue;
-		if ( (int)(i/(region->length*region->width)*region->chunkHeight + region->chunkHeight-1) <= (int)region->viewHeight - (int)region->viewDepth ) continue;
+		if ( (int)(i/(region->length*region->width)*region->chunkHeight) > viewHeightMinOne ) continue;
+		if ( (int)(i/(region->length*region->width)*region->chunkHeight + region->chunkHeight-1) <= (int)viewHeightMinOne - (int)region->viewDepth ) continue;
 		
-		uint32_t indexOffsetTop = region->viewHeight - i/(region->length*region->width)*region->chunkHeight;
+		uint32_t indexOffsetTop = viewHeightMinOne - i/(region->length*region->width)*region->chunkHeight;
 		if ( indexOffsetTop > region->chunkHeight - 1 ) indexOffsetTop = region->chunkHeight - 1;
 		
 		int indexOffsetBottom = 0;
-		if ( i/(region->length*region->width)*region->chunkHeight >= region->viewHeight - ((region->viewHeight)%region->chunkHeight) ) {
+		if ( i/(region->length*region->width)*region->chunkHeight >= viewHeightMinOne - ((viewHeightMinOne)%region->chunkHeight) ) {
 			indexOffsetBottom = indexOffsetTop - region->viewDepth;
 		}
 		else {
-			int chunkDifference = ((region->viewHeight - ((region->viewHeight)%region->chunkHeight) - i/(region->length*region->width)*region->chunkHeight) / region->chunkHeight) - 1;
-			int tmp = (region->viewDepth - (region->viewHeight%region->chunkHeight) - 1) - chunkDifference*region->chunkHeight;
-			if ( tmp <= 0 ) tmp = 10;
+			int chunkDifference = ((viewHeightMinOne - ((viewHeightMinOne)%region->chunkHeight) - i/(region->length*region->width)*region->chunkHeight) / region->chunkHeight) - 1;
+			int tmp = (region->viewDepth - (viewHeightMinOne%region->chunkHeight) - 1) - chunkDifference*region->chunkHeight;
+			if ( tmp <= 0 ) tmp = region->viewDepth;
 			indexOffsetBottom = indexOffsetTop - tmp;
 		}
 
@@ -284,6 +286,95 @@ void region_render ( const WindowInfo& window, Region *region )
 			glBindFramebuffer( GL_FRAMEBUFFER, 0 ); GLCALL;
 			glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;
 		}
+	}
+
+	uint32_t regionTexture = region->chunkMeshTexture;
+	if ( region->halfHeight ) regionTexture = region->chunkMeshTexture_halfHeight;
+	for ( uint32_t i = 0; i < region->length*region->width*region->height; ++i ) {
+		if ( i/(region->length*region->width)*region->chunkHeight > region->viewHeight ) continue;
+		if ( i/(region->length*region->width)*region->chunkHeight + region->chunkHeight - 1 < region->viewHeight ) continue;
+
+		uint32_t indexOffsetTop = region->viewHeight - i/(region->length*region->width)*region->chunkHeight;
+
+		auto& cm = region->chunkMeshes[i];
+
+		if ( cm.floorMesh_full.vao != 0 && cm.floorMesh_full.indexCount != 0 ) {
+			auto mtx = translate(mat4(1), vec3(0));
+			set_uniform_mat4( region->shader, "model", &mtx );
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture( GL_TEXTURE_2D, regionTexture ); GLCALL;
+			glBindVertexArray( cm.floorMesh_full.vao ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.floorMesh_full.ibo ); GLCALL;
+
+				uint32_t indexStart = 0;
+				uint32_t indexEnd = cm.floorMesh_full.layeredIndexCount[indexOffsetTop];
+				if ( indexOffsetTop > 0 ) {
+					indexStart = cm.floorMesh_full.layeredIndexCount[indexOffsetTop-1];;
+				}
+
+				indexEnd -= indexStart;
+
+				if ( indexEnd+indexStart > cm.floorMesh_full.indexCount ) indexEnd = cm.floorMesh_full.indexCount-indexStart;
+
+			glDrawElements( GL_TRIANGLES, indexEnd, GL_UNSIGNED_INT, (void*)(indexStart*sizeof(uint32_t)) ); GLCALL;
+			glBindVertexArray( 0 ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
+		}
+
+		if ( cm.wallMesh_full.vao != 0 && cm.wallMesh_full.indexCount != 0 ) {
+			auto mtx = translate(mat4(1), vec3(0));
+			set_uniform_mat4( region->shader, "model", &mtx );
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture( GL_TEXTURE_2D, regionTexture ); GLCALL;
+			glBindVertexArray( cm.wallMesh_full.vao ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.wallMesh_full.ibo ); GLCALL;
+
+				uint32_t indexStart = 0;
+				uint32_t indexEnd = cm.wallMesh_full.layeredIndexCount[indexOffsetTop];
+				if ( indexOffsetTop > 0 ) {
+					indexStart = cm.wallMesh_full.layeredIndexCount[indexOffsetTop-1];;
+				}
+
+				indexEnd -= indexStart;
+
+				if ( indexEnd+indexStart > cm.wallMesh_full.indexCount ) indexEnd = cm.wallMesh_full.indexCount-indexStart;
+
+			glDrawElements( GL_TRIANGLES, indexEnd, GL_UNSIGNED_INT, (void*)(indexStart*sizeof(uint32_t)) ); GLCALL;
+			glBindVertexArray( 0 ); GLCALL;
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
+		}
+
+		if ( cm.waterMesh_full.vao != 0 && cm.waterMesh_full.indexCount != 0 ) {
+			glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;
+			glBindFramebuffer( GL_FRAMEBUFFER, framebuffer ); GLCALL;
+			glDisable( GL_BLEND ); GLCALL;
+
+				auto mtx = translate(mat4(1), vec3(0));
+				set_uniform_mat4( region->shader, "model", &mtx );
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture( GL_TEXTURE_2D, regionTexture ); GLCALL;
+				glBindVertexArray( cm.waterMesh_full.vao ); GLCALL;
+				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.waterMesh_full.ibo ); GLCALL;
+
+					uint32_t indexStart = 0;
+					uint32_t indexEnd = cm.waterMesh_full.layeredIndexCount[indexOffsetTop];
+					if ( indexOffsetTop > 0 ) {
+						indexStart = cm.waterMesh_full.layeredIndexCount[indexOffsetTop-1];;
+					}
+
+					indexEnd -= indexStart;
+
+					if ( indexEnd+indexStart > cm.waterMesh_full.indexCount ) indexEnd = cm.waterMesh_full.indexCount-indexStart;
+
+				glDrawElements( GL_TRIANGLES, indexEnd, GL_UNSIGNED_INT, (void*)(indexStart*sizeof(uint32_t)) ); GLCALL;
+				glBindVertexArray( 0 ); GLCALL;
+				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
+
+			glEnable( GL_BLEND ); GLCALL;
+			glBindFramebuffer( GL_FRAMEBUFFER, 0 ); GLCALL;
+			glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;	
+		}
+
 	}
 	
 	glUseProgram( framebufferShader ); GLCALL;
