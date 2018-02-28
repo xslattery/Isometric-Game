@@ -164,6 +164,8 @@ struct Region
 	int viewHeight;
 	int viewDepth;
 	bool halfHeight;
+
+	bool cameraMoved = false;
 };
 
 ///////////////////

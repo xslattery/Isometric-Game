@@ -160,6 +160,7 @@ void region_cleanup ( Region *region )
 	glDeleteBuffers( 1, &quadVBO );
 	glDeleteVertexArrays( 1, &quadVAO );
 	glDeleteProgram( framebufferShader );
+	framebufferGenerated = false;
 }
 
 //////////////////////////////////
@@ -173,10 +174,12 @@ void region_render ( const WindowInfo& window, Region *region )
 		create_water_framebuffer( window, region );
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer); GLCALL;
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f); GLCALL;
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); GLCALL;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0); GLCALL;
+	// if ( region->cameraMoved ) {
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer); GLCALL;
+			glClearColor(0.0f, 0.0f, 0.0f, 0.0f); GLCALL;
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); GLCALL;
+		glBindFramebuffer(GL_FRAMEBUFFER, 0); GLCALL;
+	// }
 
 	glClearColor( 0.5f, 0.6f, 0.7f, 1.0f ); GLCALL;
 
@@ -258,33 +261,35 @@ void region_render ( const WindowInfo& window, Region *region )
 		}
 
 		if ( cm.waterMesh.vao != 0 && cm.waterMesh.indexCount != 0 ) {
-			glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;
-			glBindFramebuffer( GL_FRAMEBUFFER, framebuffer ); GLCALL;
-			glDisable( GL_BLEND ); GLCALL;
+			// if ( region->cameraMoved ) {
+				glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;
+				glBindFramebuffer( GL_FRAMEBUFFER, framebuffer ); GLCALL;
+				glDisable( GL_BLEND ); GLCALL;
 
-				auto mtx = translate(mat4(1), vec3(0));
-				set_uniform_mat4( region->shader, "model", &mtx );
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture( GL_TEXTURE_2D, region->chunkMeshTexture ); GLCALL;
-				glBindVertexArray( cm.waterMesh.vao ); GLCALL;
-				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.waterMesh.ibo ); GLCALL;
+					auto mtx = translate(mat4(1), vec3(0));
+					set_uniform_mat4( region->shader, "model", &mtx );
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture( GL_TEXTURE_2D, region->chunkMeshTexture ); GLCALL;
+					glBindVertexArray( cm.waterMesh.vao ); GLCALL;
+					glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.waterMesh.ibo ); GLCALL;
 
-					uint32_t indexStart = 0;
-					uint32_t indexEnd = cm.waterMesh.layeredIndexCount[indexOffsetTop];
-					if ( indexOffsetBottom >= 0 ) {
-						indexStart = cm.waterMesh.layeredIndexCount[indexOffsetBottom];
-						indexEnd = cm.waterMesh.layeredIndexCount[indexOffsetTop] - indexStart;
-					}
+						uint32_t indexStart = 0;
+						uint32_t indexEnd = cm.waterMesh.layeredIndexCount[indexOffsetTop];
+						if ( indexOffsetBottom >= 0 ) {
+							indexStart = cm.waterMesh.layeredIndexCount[indexOffsetBottom];
+							indexEnd = cm.waterMesh.layeredIndexCount[indexOffsetTop] - indexStart;
+						}
 
-					if ( indexEnd+indexStart > cm.waterMesh.indexCount ) indexEnd = cm.waterMesh.indexCount-indexStart;
+						if ( indexEnd+indexStart > cm.waterMesh.indexCount ) indexEnd = cm.waterMesh.indexCount-indexStart;
 
-				glDrawElements( GL_TRIANGLES, indexEnd, GL_UNSIGNED_INT, (void*)(indexStart*sizeof(uint32_t)) ); GLCALL;
-				glBindVertexArray( 0 ); GLCALL;
-				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
+					glDrawElements( GL_TRIANGLES, indexEnd, GL_UNSIGNED_INT, (void*)(indexStart*sizeof(uint32_t)) ); GLCALL;
+					glBindVertexArray( 0 ); GLCALL;
+					glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
 
-			glEnable( GL_BLEND ); GLCALL;
-			glBindFramebuffer( GL_FRAMEBUFFER, 0 ); GLCALL;
-			glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;
+				glEnable( GL_BLEND ); GLCALL;
+				glBindFramebuffer( GL_FRAMEBUFFER, 0 ); GLCALL;
+				glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;
+			// }
 		}
 	}
 
@@ -345,34 +350,36 @@ void region_render ( const WindowInfo& window, Region *region )
 		}
 
 		if ( cm.waterMesh_full.vao != 0 && cm.waterMesh_full.indexCount != 0 ) {
-			glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;
-			glBindFramebuffer( GL_FRAMEBUFFER, framebuffer ); GLCALL;
-			glDisable( GL_BLEND ); GLCALL;
+			// if ( region->cameraMoved ) {
+				glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;
+				glBindFramebuffer( GL_FRAMEBUFFER, framebuffer ); GLCALL;
+				glDisable( GL_BLEND ); GLCALL;
 
-				auto mtx = translate(mat4(1), vec3(0));
-				set_uniform_mat4( region->shader, "model", &mtx );
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture( GL_TEXTURE_2D, regionTexture ); GLCALL;
-				glBindVertexArray( cm.waterMesh_full.vao ); GLCALL;
-				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.waterMesh_full.ibo ); GLCALL;
+					auto mtx = translate(mat4(1), vec3(0));
+					set_uniform_mat4( region->shader, "model", &mtx );
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture( GL_TEXTURE_2D, regionTexture ); GLCALL;
+					glBindVertexArray( cm.waterMesh_full.vao ); GLCALL;
+					glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, cm.waterMesh_full.ibo ); GLCALL;
 
-					uint32_t indexStart = 0;
-					uint32_t indexEnd = cm.waterMesh_full.layeredIndexCount[indexOffsetTop];
-					if ( indexOffsetTop > 0 ) {
-						indexStart = cm.waterMesh_full.layeredIndexCount[indexOffsetTop-1];;
-					}
+						uint32_t indexStart = 0;
+						uint32_t indexEnd = cm.waterMesh_full.layeredIndexCount[indexOffsetTop];
+						if ( indexOffsetTop > 0 ) {
+							indexStart = cm.waterMesh_full.layeredIndexCount[indexOffsetTop-1];;
+						}
 
-					indexEnd -= indexStart;
+						indexEnd -= indexStart;
 
-					if ( indexEnd+indexStart > cm.waterMesh_full.indexCount ) indexEnd = cm.waterMesh_full.indexCount-indexStart;
+						if ( indexEnd+indexStart > cm.waterMesh_full.indexCount ) indexEnd = cm.waterMesh_full.indexCount-indexStart;
 
-				glDrawElements( GL_TRIANGLES, indexEnd, GL_UNSIGNED_INT, (void*)(indexStart*sizeof(uint32_t)) ); GLCALL;
-				glBindVertexArray( 0 ); GLCALL;
-				glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
+					glDrawElements( GL_TRIANGLES, indexEnd, GL_UNSIGNED_INT, (void*)(indexStart*sizeof(uint32_t)) ); GLCALL;
+					glBindVertexArray( 0 ); GLCALL;
+					glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); GLCALL;
 
-			glEnable( GL_BLEND ); GLCALL;
-			glBindFramebuffer( GL_FRAMEBUFFER, 0 ); GLCALL;
-			glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;	
+				glEnable( GL_BLEND ); GLCALL;
+				glBindFramebuffer( GL_FRAMEBUFFER, 0 ); GLCALL;
+				glViewport( 0, 0, window.hidpi_width, window.hidpi_height ); GLCALL;
+			// }
 		}
 
 	}
@@ -391,6 +398,8 @@ void region_render ( const WindowInfo& window, Region *region )
 		    glActiveTexture( GL_TEXTURE0 ); GLCALL;
 	    glBindVertexArray( 0 ); GLCALL;
     glUseProgram( 0 ); GLCALL;
+
+    // region->cameraMoved = false;
 }
 
 //////////////////////////////////

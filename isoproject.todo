@@ -1,0 +1,172 @@
+
+TODO:
+ ✔ Debug chunk grid & tile grid @done (17-12-24 23:32)
+ ✔ Replace 'region->length*region->chunkLength' with a new variable storing this 'region->worldLength' @done (17-12-25 20:09)
+ ✔ View depth (how many tile down you can see) @done (17-12-26 19:39)
+ ✔ Transparent water rendering @done (17-12-29 17:18)
+     This could be done by disabling blending, then
+     rendering the water to a seperate framebuffer,
+     and finally merging the framebuffer with the
+     main framebuffer, using depth information to
+     occlude behind existing geometry.
+     This fixes the issue of overlapping water tiles.
+ ✔ Propper layered rendering @done (17-12-30 12:40)
+     Also half height rendering (Note: the texture for this needs to be fixed (color))
+ ✔ Make it so meshes are only generated if they are visible @done (17-12-30 12:40)
+ ☐ Re-Add directional occlusion
+     Make it so it only doesn't apply to the layer view.
+ ☐ Framebuffer Optimisation
+     Render the scene to a framebuffer and only re-draw to the framebuffer
+     if somthing in the scene changes, or if the camera moves / zooms.
+     ~ This could include rendering the walls & floors to one framebuffer,
+     the water to another, and people to the main.
+     ~ Depth testing will take care of sorting,
+ ☐ Occlusion Optimisation
+     ~ Only render what is inside the camera's view.
+     ~ Only generate what is inside the cameras view plus a bit of extra boundry.
+ ☐ Camera:
+    - Scrolling, add discrent intervals to avoide noise
+    - Movement speed based on scroll level
+    - Rotating based on position in wrorld
+    - Lock position to region bounds
+ ☐ Add modifier keys to input
+ ☐  Tile Selection:
+    - 2D
+    - 3D maybe?
+ ☐ Fix the water stuck on ledges & occisionaly floating when too much water
+ ☐ Different tile types
+ ☐ Remove & Add tiles
+ ☐ Better region gen, with new tile types
+ ☐ Improve text rendering
+     - Right Justified
+     - Centered
+     - Colour
+ ☐ Move thread creation & cleanup to game scene
+ ☐ Fix the Windows Platform
+ ☐ Setup for a dynamic thread count:
+    - This would allow the ther to specify the number of threads they want to use
+    - This will require some extra work for values less than 3 because the mesh gen will need to be moved to the rendering or simualtion threads
+    - With single thread everything will need to be moved to the render thread
+ ☐ Debug Console:
+    - '/' to enable
+    - 'esc' to disable
+    - It could be possiable to drag to resize the drop down view
+ ☐ UI:
+    - Main menu
+      - New
+      - Load
+      - Quit
+    - Region loading / generation screen
+ ☐ Saving & Loading to file
+ ☐ Debug timing statistics
+
+
+
+--- ✄ -----------------------
+
+
+
+IDEAS:
+  - Scuba suit, to allow people to walk underwater
+  - Underground dungons
+  - Caves & caverns
+  - Old Ruined structures
+  - Rivers
+  - Ravines
+  - Shiprecks (above & underwater)
+  - Abandoned docks
+  - Aquifer (for never ending water supply)
+  - Rain (water will be spanwed at the top of the world)
+  - Snow (particles will fall and the ground will change to white OR snow tiles will build up, they could ovelap with objects and maybe kill off plants)
+  - Trading with others (buy and sell goods)
+  - Create an inn where others can stay with you
+  - Recruting (you can try to convince visitors to join you)
+  - Migrants (maybe? this may clash with the recruting idea)
+  - Water can freze and become ice
+
+BIOMES:
+  - Forest
+  - Planes
+  - Mountian
+  - Ocean
+  - Lake
+  - Tundra
+  - Desert
+
+PLANTS:
+  - Above ground plants
+    - Trees
+    - Potato
+    - Carrot
+    - Mushroom
+    - Corn
+    - Hemp
+    - Berries
+    - Cactus
+  - Underwater plants
+    - Seaweed
+    - Corral
+
+ANIMALS:
+  - Cows & Bulls
+  - Chickens & Roosters
+  - Sheep
+  - Pigs
+
+Main Tile Types:
+  - DIRT
+  - STONE
+    - Grannite
+    - Marble
+  - SAND
+  - CLAY
+  - OBSIDIAN
+
+ORES:
+  - Copper
+  - Iron
+  - Silver
+  - Gold
+  - Lead
+  - Coal
+  - Gems
+    - Diamond
+    - Saphire
+    - Ruby
+    - Emerald
+
+LIQUIDS:
+  - Water
+  - Magma/Lava
+
+WEAPONS, ARMOR & AMMO:
+  - Short sword
+  - Long sword
+  - Shortbow
+  - Longbow
+  - Arrows
+  - Spears
+  - Shield
+  - Helmet
+  - Chestplate
+  - Leggings
+  - Boots
+
+MONSTERS & ENEMIES:
+  - Dragon
+  - Spides
+  - Snakes
+  - Zombie
+  - Skellington
+  - Witch
+  - Ork
+  - Goblin
+
+OBJECTS:
+  - Statue
+  - Table
+  - Chair
+  - Armor stand
+  - Weapon stand
+  - Bed
+  - Door

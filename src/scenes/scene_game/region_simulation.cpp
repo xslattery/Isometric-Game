@@ -149,7 +149,7 @@ static void simulate_water ( Region *region, std::vector<uint32_t> &newChunksTha
 		uint32_t newHighestWater = 0;
 
 		for ( auto p : region->waterThatNeedsUpdate ) {
-			uint32_t bitPos = p.x + p.y*region->worldLength + p.z*region->worldLength*region->worldWidth;
+			uint32_t bitPos = (int)(p.x) + (int)(p.y)*region->worldLength + (int)(p.z)*region->worldLength*region->worldWidth;
 			if ( region->updatedWaterBitset[ bitPos ] == true ) continue;
 			region->updatedWaterBitset[ bitPos ] = true;
 			if ( bitPos < newLowestWater ) newLowestWater = bitPos;

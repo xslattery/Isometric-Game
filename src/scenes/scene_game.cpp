@@ -68,7 +68,7 @@ void Game_Scene::init( const WindowInfo& window )
 	generatingTextMesh.fontsize = 16;
 	create_text_mesh( "Generating region...", generatingTextMesh, packedGlyphTexture, shader );
 
-	region_init( window, &region, 32, 32, 32, 2, 2, 6 );
+	region_init( window, &region, 32, 32, 32, 4, 4, 6 );
 	region_issue_command( &region, {Region_Command_Type::GENERATE_DATA} );
 }
 
@@ -110,8 +110,8 @@ void Game_Scene::render ( const WindowInfo& window )
 
 	region_render( window, &region );
 
-	Debug::draw_region_layer_grid( &region );
-	Debug::draw_region_chunk_grid( &region );
+	// Debug::draw_region_layer_grid( &region );
+	// Debug::draw_region_chunk_grid( &region );
 
 	glDisable( GL_DEPTH_TEST ); GLCALL;
 	glUseProgram( shader ); GLCALL;
@@ -140,19 +140,28 @@ void Game_Scene::input ( const WindowInfo& window, InputInfo* input )
 	float speed = 3000;
 	if ( get_key( input, Key::Key_RETURN ) )
 		speed = 500;
-	if ( get_key( input, Key::Key_W ) )
+	if ( get_key( input, Key::Key_W ) ) {
 		region.camera = translate( region.camera, -vec3(0,1,0)*window.deltaTime*speed );
-	if ( get_key( input, Key::Key_S ) )
+		region.cameraMoved = true;
+	}
+	if ( get_key( input, Key::Key_S ) ) {
 		region.camera = translate( region.camera, -vec3(0,-1,0)*window.deltaTime*speed );
-	if ( get_key( input, Key::Key_A ) )
+		region.cameraMoved = true;
+	}
+	if ( get_key( input, Key::Key_A ) ) {
 		region.camera = translate( region.camera, -vec3(-1,0,0)*window.deltaTime*speed );
-	if ( get_key( input, Key::Key_D ) )
+		region.cameraMoved = true;
+	}
+	if ( get_key( input, Key::Key_D ) ) {
 		region.camera = translate( region.camera, -vec3(1,0,0)*window.deltaTime*speed );
+		region.cameraMoved = true;
+	}
 	
 	if ( input->mouseScrollDeltaY != 0 ) {
 		region.projectionScale = region.projectionScale + input->mouseScrollDeltaY*window.deltaTime;
 		if ( region.projectionScale <= 0.2 ) region.projectionScale = 0.2f;
 		region.projection = orthographic_projection( -window.height/2*region.projectionScale, window.height/2*region.projectionScale, -window.width/2*region.projectionScale, window.width/2*region.projectionScale, 0.1f, 5000.0f );
+		region.cameraMoved = true;
 	}
 
 	if ( get_key( input, Key::Key_Z ) ) {
