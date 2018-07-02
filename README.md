@@ -7,7 +7,7 @@ This project is currently a work in process. It is a 2D Isometric game, where yo
 
 ## Supported Platforms:
 - OSX / MacOS
-- Windows
+- Windows (Not Currently Working)
 
 
 ## How to Build:
